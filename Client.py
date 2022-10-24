@@ -1,12 +1,15 @@
 from Consultant import Consultant
+from Database import Database
 
 class Client():
-    def __init__(self, id : int, consultant : Consultant) -> None:
+    def __init__(self, id : int, consultant : Consultant, database : Database) -> None:
         self.id = id
         self.consultant = consultant
+        self.database = database
 
         # get private key 
-        self.key = self.consultant.ken_gen(self.id)
+        self.key = self.consultant.key_gen(self.id)
+
 
     def getId(self) -> int:
         """ Function to retrieve the id of the client
@@ -16,6 +19,7 @@ class Client():
         """
         return self.id
 
+
     def get_key(self) -> bytes:
         """ Function to retrieve the private key of the client
 
@@ -24,9 +28,10 @@ class Client():
         """
         return self.key
 
-    def write(message : str):
-        pass
 
-    def search(self, keyword : str):
-        pass
+    def write(message : str, database : Database):
+        database.add()
+
+    def search(keyword : str, database : Database):
+        database.search()
     

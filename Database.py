@@ -6,9 +6,9 @@ class Database():
         pass
 
     def add(self):
-        pass
+        print("Database adding... ")
 
-    def search(self):
+    def search(self, trapdoor : bytes):
         print("I am not going to search...")
 
     
