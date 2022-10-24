@@ -16,7 +16,7 @@ class Client():
         self.key = self.consultant.key_gen(self.id) # get private key 
 
         self.E_cipher = AES.new(self.key, AES.MODE_ECB) #deterministic encryption
-        self.f_cipher = HMAC.new(bytes(self.key), digestmod=SHA256)
+
 
     def get_id(self) -> int:
         """ Function to retrieve the id of the client
@@ -40,22 +40,20 @@ class Client():
 
         C = list()
         for i in range(len(keywords)):
-            W_i = keywords[i]
-            X_i = self.E_cipher.encrypt(pad(bytes(W_i, 'utf-8'), AES.block_size))
-            L_i = X_i[:12]
-            print("Encrypted keyword",i, X_i)
-            # print("Encrypted keyword",i, int.from_bytes(X_i, byteorder='big'))
-            S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))[:12] # is this secure?
+            W_i = pad(bytes(keywords[i], 'utf-8'), AES.block_size)
+            X_i = self.E_cipher.encrypt(W_i)
+            L_i, R_i = X_i[:12], X_i[12:]
 
-            k_i = self.f_cipher.update(L_i).digest()
-            F_cipher = AES.new(k_i, AES.MODE_CBC)
+            f_cipher = HMAC.new(bytes(self.key), digestmod=SHA256)
+            k_i = f_cipher.update(L_i).digest() #silver key
+            S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))[:12] # is this secure?
+            F_cipher = AES.new(k_i, AES.MODE_ECB)
 
             # T_i = S_i || F_k(S_i)
-            
-            T_i = S_i + F_cipher.encrypt(pad(S_i, AES.block_size))
-            C.append(bytes(a ^ b for a,b in zip(X_i, T_i)))
-
-        print("Calculated ciphertext keywords, sending to database...")
+            F_S = F_cipher.encrypt(pad(S_i, AES.block_size))[:4]
+            T_i = S_i + F_S
+            C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
+            C.append(C_i)
         self.database.add(C)
         return C
 
@@ -77,13 +75,10 @@ class Client():
 
     def search(self, keyword : str):
         X = self.E_cipher.encrypt(pad(bytes(keyword, 'utf-8'), AES.block_size))
-        L_i = X[:12]
+        L_i, R_i = X[:12], X[12:]
 
-        k_i = self.f_cipher.update(L_i).digest()
-        F_cipher = AES.new(k_i, AES.MODE_CBC)
-        token = F_cipher.encrypt(pad(L_i, AES.block_size))
-
-        print("Searching for keyword ", L_i, "with token", token)
-        self.database.search(X, token)
+        f_cipher = HMAC.new(bytes(self.key), digestmod=SHA256)
+        k_i = f_cipher.update(L_i).digest() #search token
+        return self.database.search(X, k_i)
         
     
