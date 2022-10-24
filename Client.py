@@ -5,10 +5,9 @@ class Client():
         self.id = id
         self.consultant = consultant
 
-        # get private key 
-        self.key = self.consultant.ken_gen(self.id)
+        self.key = self.consultant.key_gen(self.id) # get private key 
 
-    def getId(self) -> int:
+    def get_id(self) -> int:
         """ Function to retrieve the id of the client
 
         Returns:
