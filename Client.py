@@ -24,7 +24,7 @@ class Client():
         """
         return self.key
 
-    def write(message : str):
+    def write(self, message : str):
         pass
 
     def search(self, keyword : str):

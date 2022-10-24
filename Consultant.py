@@ -3,9 +3,9 @@ from Crypto.Hash import SHA512
 from Crypto.Random import get_random_bytes
 
 class Consultant():
-    def __init__(self) -> None:
+    def __init__(self, sec_param = 2 ** 6) -> None:
         # security parameter
-        sec_param = 2 ** 6
+        self.sec_param = sec_param
 
         # generate master key
         self.master_key = get_random_bytes(sec_param)
