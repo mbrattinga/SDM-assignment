@@ -13,5 +13,8 @@ print(client_a.get_key())
 print(client_a.get_key())
 print(client_b.get_key())
 
+client_a_encrypted_keywords = client_a.write(["cat", "dog"])
+print(client_a_encrypted_keywords)
+
 # database.search()
 
