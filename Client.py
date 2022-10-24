@@ -1,4 +1,4 @@
-from Crypto.Hash import HMAC, SHA512
+from Crypto.Hash import HMAC, SHA256
 from Consultant import Consultant
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
@@ -14,6 +14,9 @@ class Client():
         self.database = database
 
         self.key = self.consultant.key_gen(self.id) # get private key 
+
+        self.E_cipher = AES.new(self.key, AES.MODE_ECB) #deterministic encryption
+
 
     def get_id(self) -> int:
         """ Function to retrieve the id of the client
@@ -32,25 +35,25 @@ class Client():
         return self.key
 
     def write(self, keywords):
-        cipher_AES = AES.new(self.key, AES.MODE_ECB) #deterministic encryption
+        
         s_cipher = AES.new(self.key, AES.MODE_CTR)
-        hmac_key = HMAC.new(bytes(self.key), digestmod=SHA512)
 
         C = list()
         for i in range(len(keywords)):
-            W_i = keywords[i]
-            X_i = cipher_AES.encrypt(pad(bytes(W_i, 'utf-8'), AES.block_size))
-            print("Encrypted keyword",i, X_i)
-            # print("Encrypted keyword",i, int.from_bytes(X_i, byteorder='big'))
+            W_i = pad(bytes(keywords[i], 'utf-8'), AES.block_size)
+            X_i = self.E_cipher.encrypt(W_i)
+            L_i, R_i = X_i[:12], X_i[12:]
+
+            f_cipher = HMAC.new(bytes(self.key), digestmod=SHA256)
+            k_i = f_cipher.update(L_i).digest() #silver key
             S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))[:12] # is this secure?
+            F_cipher = AES.new(k_i, AES.MODE_ECB)
 
-            hmac_key = HMAC.new(bytes(self.key), digestmod=SHA512)
-            k_i = hmac_key.update(X_i[:12]).digest()
             # T_i = S_i || F_k(S_i)
-            T_i = S_i + PBKDF2(k_i, S_i, 4, hmac_hash_module=SHA512)
-            C.append(bytes(a ^ b for a,b in zip(X_i, T_i)))
-
-        print("Calculated ciphertext keywords, sending to database...")
+            F_S = F_cipher.encrypt(pad(S_i, AES.block_size))[:4]
+            T_i = S_i + F_S
+            C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
+            C.append(C_i)
         self.database.add(C)
         return C
 
@@ -71,13 +74,11 @@ class Client():
     #     return W
 
     def search(self, keyword : str):
-        cipher_AES = AES.new(self.key, AES.MODE_ECB) #deterministic encryption
-        encrypted_keyword = cipher_AES.encrypt(pad(bytes(keyword, 'utf-8'), AES.block_size))
+        X = self.E_cipher.encrypt(pad(bytes(keyword, 'utf-8'), AES.block_size))
+        L_i, R_i = X[:12], X[12:]
 
-        hmac_key = HMAC.new(bytes(self.key), digestmod=SHA512)
-        token = hmac_key.update(encrypted_keyword[:12]).digest()
-
-        print("Searching for keyword ", encrypted_keyword, "with token", token)
-        self.database.search(encrypted_keyword, token)
+        f_cipher = HMAC.new(bytes(self.key), digestmod=SHA256)
+        k_i = f_cipher.update(L_i).digest() #search token
+        return self.database.search(X, k_i)
         
     

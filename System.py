@@ -9,15 +9,12 @@ consultant = Consultant(sec_param=2**6)
 client_a = Client(id=0, consultant=consultant, database=database)
 client_b = Client(id=1, consultant=consultant, database=database)
 
-print(client_a.get_key())
-print(client_a.get_key())
-print(client_b.get_key())
+client_a.write(["cat", "dog"])
+client_a.write(["cat"])
 
-client_a_encrypted_keywords = client_a.write(["cat", "dog"])
-print(client_a_encrypted_keywords)
-
-search_dog = client_a.search("dog")
-print(search_dog)
+print("Results for giraffe:", client_a.search("giraffe"))
+print("Results for dog:", client_a.search("dog"))
+print("Results for cat:", client_a.search("cat"))
 
 # database.search()
 
