@@ -28,10 +28,9 @@ class Client():
         """
         return self.key
 
-
-    def write(message : str, database : Database):
+    def write(self, message : str, database : Database):
         database.add()
 
-    def search(keyword : str, database : Database):
+    def search(self, keyword : str, database : Database):
         database.search()
     
