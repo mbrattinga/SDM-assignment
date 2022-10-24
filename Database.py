@@ -1,8 +1,7 @@
 from Crypto.Protocol.KDF import PBKDF2
-from Crypto.Hash import SHA512
-
-from Crypto.Protocol.KDF import PBKDF2
-from Crypto.Hash import SHA512
+from Crypto.Hash import SHA256
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
 
 class Database():
     def __init__(self) -> None:
@@ -22,6 +21,7 @@ class Database():
         Returns:
             [int]: return the list of document indexes
         """
+        F_cipher = AES.new(token, AES.MODE_CBC)
 
         ret = []
         
@@ -30,7 +30,9 @@ class Database():
                 xored = bytes(a ^ b for a,b in zip(keyword, enc_keyword))
 
                 left = xored[:12]
-                right = PBKDF2(token, left, 4, count=1000, hmac_hash_module=SHA512)
+                
+                right = F_cipher.encrypt(pad(left, AES.block_size))
+                # right = PBKDF2(token, left, 4, count=1000, hmac_hash_module=SHA512)
                 if (right == xored[12:16]):
                     ret.append(index)
 
