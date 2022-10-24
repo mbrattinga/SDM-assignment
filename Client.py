@@ -1,3 +1,9 @@
+from Crypto.Hash import HMAC, SHA256
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad, unpad
+from Crypto.Random import get_random_bytes
+from Crypto.Protocol.KDF import PBKDF2
+
 from Consultant import Consultant
 from Database import Database
 
@@ -7,11 +13,12 @@ class Client():
         self.consultant = consultant
         self.database = database
 
-        # get private key 
-        self.key = self.consultant.key_gen(self.id)
+        self.key = self.consultant.key_gen(self.id) # get private key 
+
+        self.E_cipher = AES.new(self.key, AES.MODE_ECB) #deterministic encryption
 
 
-    def getId(self) -> int:
+    def get_id(self) -> int:
         """ Function to retrieve the id of the client
 
         Returns:
@@ -28,9 +35,53 @@ class Client():
         """
         return self.key
 
-    def write(self, message : str, database : Database):
-        database.add()
+    def write(self, keywords : [str]) -> [bytes]:
+        
+        s_cipher = AES.new(self.key, AES.MODE_CTR)
 
-    def search(self, keyword : str, database : Database):
-        database.search()
+        C = []
+        for i, keyword in enumerate(keywords):
+            W_i = pad(bytes(keyword, 'utf-8'), AES.block_size)
+            X_i = self.E_cipher.encrypt(W_i)
+            L_i, R_i = X_i[:12], X_i[12:]
+
+            f_cipher = HMAC.new(self.key, digestmod=SHA256)
+            k_i = f_cipher.update(L_i).digest() #silver key
+            S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))[:12] # is this secure?
+            F_cipher = AES.new(k_i, AES.MODE_ECB)
+
+            # T_i = S_i || F_k(S_i)
+            F_S = F_cipher.encrypt(pad(S_i, AES.block_size))[:4]
+            T_i = S_i + F_S
+            C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
+            C.append(C_i)
+        self.database.add(C)
+        return C
+
+    # Not working yet
+    # def decrypt(self, keywords):
+    #     s_cipher = AES.new(self.key, AES.MODE_CTR)
+    #     hmac_key = HMAC.new(bytes(self.key), digestmod=SHA512)
+
+    #     W = list()
+    #     for i in range(len(keywords)):
+    #         C_i = keywords[i]
+            
+    #         S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))
+    #         k_i = hmac_key.update(X_i[:12]).digest()
+    #         T_i = s_hmac.update(i).digest()
+    #         W.append(bytes(a ^ b for a,b in zip(C_i, T_i)))
+
+    #     return W
+
+    def search(self, keyword : str):
+        X = self.E_cipher.encrypt(pad(bytes(keyword, 'utf-8'), AES.block_size))
+        L_i, R_i = X[:12], X[12:]
+
+        f_cipher = HMAC.new(self.key, digestmod=SHA256)
+        k_i = f_cipher.update(L_i).digest() #search token
+        return self.database.search(X, k_i)
+        
     
+    def get_E_cipher(self):
+        return self.E_cipher
