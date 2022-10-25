@@ -9,17 +9,22 @@ class Database():
         self.storage = {}
         self.doc_counter = 0
 
-    def add(self, c_keywords):
+    def add(self, c_keywords : [bytes]):
+        """ Performs add an encrypted document on the database.
+
+        Args:
+            c_keywords ([bytes]): the encryped keywords of the document.
+        """
         self.storage[self.doc_counter] = c_keywords
         self.doc_counter += 1
 
-    def search(self, X : bytes, token : bytes):
-        """ Perform search of a encrypted keyword
+    def search(self, X : bytes, token : bytes) -> [int]:
+        """ Performs search of an encrypted keyword.
         Args:
-            enc_keyword (bytes): the encrypted keyword
-            token (bytes): search token
+            enc_keyword (bytes): the encrypted keyword.
+            token (bytes): search token.
         Returns:
-            [int]: return the list of document indexes
+            [int]: return the list of document indexes that contain the keyword.
         """
         F_cipher = AES.new(token, AES.MODE_ECB)
 
@@ -36,5 +41,14 @@ class Database():
                     break
 
         return result
+
+
+    def get_storage(self) -> {}:
+        """ Helper function to retrieve the encrypted storage.
+
+        Returns:
+            dict: the storage.
+        """
+        return self.storage
 
     

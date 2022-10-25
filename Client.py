@@ -36,6 +36,14 @@ class Client():
         return self.key
 
     def write(self, keywords : [str]) -> [bytes]:
+        """ Function used by the client to write data on the database.
+
+        Args:
+            keywords (str]): the list of keywords that we user wants to write.
+
+        Returns:
+            [bytes]: the encryped keywords that have been written.
+        """
         
         s_cipher = AES.new(self.key, AES.MODE_CTR)
 
@@ -64,17 +72,25 @@ class Client():
     #     hmac_key = HMAC.new(bytes(self.key), digestmod=SHA512)
 
     #     W = list()
-    #     for i in range(len(keywords)):
-    #         C_i = keywords[i]
+    #     for i, keyword in enumerate(keywords):
+    #         C_i = keyword
             
     #         S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))
     #         k_i = hmac_key.update(X_i[:12]).digest()
     #         T_i = s_hmac.update(i).digest()
     #         W.append(bytes(a ^ b for a,b in zip(C_i, T_i)))
 
-    #     return W
+        return W
 
     def search(self, keyword : str):
+        """ Function of the client to search on the database.
+
+        Args:
+            keyword (str): the keyword in plaintext to be searched. 
+
+        Returns:
+            [int]: the list of document indexes that contain the keyword. 
+        """
         X = self.E_cipher.encrypt(pad(bytes(keyword, 'utf-8'), AES.block_size))
         L_i, R_i = X[:12], X[12:]
 
@@ -84,4 +100,6 @@ class Client():
         
     
     def get_E_cipher(self):
+        """ Helper function the retrieve the encryption function used by the client.
+        """
         return self.E_cipher
