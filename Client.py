@@ -45,25 +45,39 @@ class Client():
             [bytes]: the encryped keywords that have been written.
         """
         
+        # https://www.pycryptodome.org/src/cipher/classic
         s_cipher = AES.new(self.key, AES.MODE_CTR)
 
         C = []
         for i, keyword in enumerate(keywords):
+            # warning
+            if (len(keyword) > AES.block_size):
+                print("Keyword [", keyword, "] too big (>128bit), something might go wrong", file=sys.stderr)
+
+            # pad the keyword until reaching blocksize
             W_i = pad(bytes(keyword, 'utf-8'), AES.block_size)
+            # encrypt the keyword
             X_i = self.E_cipher.encrypt(W_i)
+            # divide in left and right
             L_i, R_i = X_i[:12], X_i[12:]
 
             f_cipher = HMAC.new(self.key, digestmod=SHA256)
             k_i = f_cipher.update(L_i).digest() #silver key
-            S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))[:12] # is this secure?
-            F_cipher = AES.new(k_i, AES.MODE_ECB)
+            # create (pesudo)random S_i (left part)
+            S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))[:12] # is this secure? 
+                                                                       # looks good to me -chen
+            F_cipher = AES.new(k_i, AES.MODE_ECB) 
 
             # T_i = S_i || F_k(S_i)
+            # encrypt left part
             F_S = F_cipher.encrypt(pad(S_i, AES.block_size))[:4]
             T_i = S_i + F_S
             C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
             C.append(C_i)
         self.database.add(C)
+
+        # debug
+        print("Client", self.id,  "added", keywords)
         return C
 
     # Not working yet
@@ -91,7 +105,10 @@ class Client():
         Returns:
             [int]: the list of document indexes that contain the keyword. 
         """
+
+        # encrypt the keyword
         X = self.E_cipher.encrypt(pad(bytes(keyword, 'utf-8'), AES.block_size))
+        # split in left and right
         L_i, R_i = X[:12], X[12:]
 
         f_cipher = HMAC.new(self.key, digestmod=SHA256)

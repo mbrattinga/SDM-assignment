@@ -54,6 +54,10 @@ class Consultant():
 
         C = []
         for i, keyword in enumerate(keywords):
+            # warning
+            if (len(keyword) > AES.block_size):
+                print("Keyword [", keyword, "] too big (>128bit), something might go wrong", file=sys.stderr)
+
             W_i = pad(bytes(keyword, 'utf-8'), AES.block_size)
             X_i = E_cipher.encrypt(W_i)
             L_i, R_i = X_i[:12], X_i[12:]
@@ -69,6 +73,9 @@ class Consultant():
             C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
             C.append(C_i)
         self.database.add(C)
+
+        # debug
+        print("Consultant added for client", client.get_id(), keywords)
         return C
     
 
