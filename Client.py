@@ -1,4 +1,5 @@
 from ast import keyword
+import math
 from Database import Database
 from Consultant import Consultant
 from Crypto.Hash import SHA256, HMAC
@@ -26,6 +27,7 @@ class Client():
             int: the client id
         """
         return self.id
+
 
     # TODO replace all ^ xor operations by correct ones
     def encrypt(self, documents):
@@ -71,14 +73,21 @@ class Client():
                     # (2b)
                     T_s[Fw] = (A_s_address) ^ Gw #  + A_d_address
         
-        # 4
+        # 4 create L_free list
         
 
-        # 5
+        # 5 fill remain A_s and A_d with random strings of length that fits in A_s
+        for i in range(len(A_s)):
+            if A_s[i] is None:
+                A_s[i] = get_random_bytes(int(math.ceil(math.log(len(A_s),10))))
 
-        # 6
+        # 6 encrypt each document using AES
+        c = list()
+        for document in documents:
+            c.append(document) # TODO AES encryption of keywords
 
         # 7
+        return ((A_s,T_s), c)
 
 
 
