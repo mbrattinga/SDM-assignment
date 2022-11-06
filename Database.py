@@ -8,10 +8,10 @@ class Database():
     def hash2(token, random):
         return
 
-    def delete(index, ctxt, token):
+    def delete(index, ctxt, delete_token):
         
         # 1
-        token1, token2, token3, doc_id = token
+        token1, token2, token3, doc_id = delete_token
 
         T_d = [] # to be removed
         if token1 not in T_d:

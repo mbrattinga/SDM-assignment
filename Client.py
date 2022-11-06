@@ -18,3 +18,14 @@ class Client():
             int: the client id
         """
         return self.id
+
+
+    def del_token(K : tuple(bytes, bytes, bytes, bytes), doc_id) -> tuple(bytes, bytes, bytes, int):
+
+        delete_token = F, G, P, doc_id
+
+        return delete_token
+
+
+    def delete(index, ciphertexts, delete_token):
+        self.database.delete(index, ciphertexts, delete_token)
