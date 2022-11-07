@@ -59,10 +59,21 @@ class Database():
             # N_minus1 = something # TODO
 
             # Update N−1’s “next pointer”
+            # beta1 = id
+            # beta2 = address
+            # r_minus1 = randomness
             beta1, beta2, r_minus1 = self.A_s[alfa5]
             self.A_s[alfa5] = beta1, beta2 ^ alfa4 ^ alfa6, r_minus1
 
             # update the pointers of N−1’s dual
+            # beta1 = address_d(D+1)
+            # beta2 = address_d(N-1)
+            # beta3 = address_d(N+1)
+            # beta4 = address_s(N)
+            # beta5 = address_s(N-1)
+            # beta6 = address_s(N+1)
+            # mu_star = F_key1(w)
+            # r_star_minus1 = randomness
             beta1, beta2, beta3, beta4, beta5, beta6, mu_star, r_star_minus1 = self.A_s[alfa2]
             self.A_s[alfa2] = beta1, beta2, beta3 ^ alfa_1_prime ^ alfa3, beta4, beta5, beta6 ^ alfa4 ^ alfa6, mu_star, r_star_minus1
 
