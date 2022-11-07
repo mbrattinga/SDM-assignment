@@ -36,6 +36,16 @@ class Client():
         return self.id
 
 
+    def SrchToken(self, w):
+        Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+        Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+        Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+        return (Fw, Gw, Pw)
+
+    def Search(self, w):
+        self.database.search(self.SrchToken(w))
+
+
     # TODO replace all ^ xor operations by correct ones
     def encrypt(self, documents):
         # files = [("0", ["keyord1","keyword2"]),("1", ["keyword1"]),("2",[...]),...]
@@ -53,7 +63,7 @@ class Client():
         A_s = [None] * search_array_length # search array 
         T_s = dict() # search table, maps keywords to the entry document in search array A_s
         
-        zeros = "0" * int(math.ceil(math.log((search_array_length))))
+        zeros = bytes("0" * int(math.ceil(math.log((search_array_length)))), 'utf-8')
 
 
         for doc_id, doc_keywords  in documents:
@@ -76,12 +86,16 @@ class Client():
 
                 # If there already is an entry in the search table, decrypt to get that entry, which is the Addr_s(N+1)
                 if Fw in T_s:
-                    addr_s_N1 = T_s[Fw] ^ Gw
+                    addr_s_N1 = bytes(a ^ b for a,b in zip(T_s[Fw], Gw))
                 else: # Else there is no document with this keyword yet, so Addr(N+1)=0 string as defined in the paper
                     addr_s_N1 = zeros
                 
+                # Put into search table lookup
+                T_s[Fw] = bytes(a ^ b for a,b in zip(pad(bytes(addr_s_N), SHA256.block_size), Gw))
+                
+                print("TYPES", type(doc_id), type(addr_s_N1))
                 # Node for search array is ((id || addr(N+1)) ^H1, ri)
-                Ni = (bytes(a ^ b for a,b in zip(pad(bytes(doc_id + addr_s_N1, 'utf-8'), SHA256.block_size), H1)), ri)
+                Ni = (bytes(a ^ b for a,b in zip(pad(bytes(doc_id, 'utf-8') + addr_s_N1, SHA256.block_size), H1)), ri)
                 
                 
                 # Store in search array
@@ -96,10 +110,10 @@ class Client():
                 if A_s[free] is None:
                     break
             
-            A_s[free] = pad(bytes(previous_free, 'utf-8'), SHA256.block_size)
-            previous_free = str(free)
+            A_s[free] = pad(previous_free, SHA256.block_size)
+            previous_free = bytes(str(free), 'utf-8')
         
-        T_s["free"] = pad(bytes(previous_free, 'utf-8'), SHA256.block_size)
+        T_s["free"] = pad(previous_free, SHA256.block_size)
 
         
 
@@ -112,6 +126,7 @@ class Client():
         # TODO leave this for now
 
         # 7
+        self.database.first_setup(A_s, T_s)
         return (A_s,T_s)
 
 
