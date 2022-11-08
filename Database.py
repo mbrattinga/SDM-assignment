@@ -1,6 +1,6 @@
 import math
 from Crypto.Hash import SHA256
-
+from Util import XOR
 
 class Database():
 
@@ -32,22 +32,33 @@ class Database():
 
         # Return empty list if tau1 not in search table
         if not tau_1 in self.T_s:
+            print("Could not find a result for this search...")
             return []
 
          # step 2
         # recover pointer to first node of list
-        alpha_1 = bytes(a ^ b for a,b in zip(self.T_s[tau_1], tau_2))
+        alpha_1 = int.from_bytes(XOR(self.T_s[tau_1], tau_2), 'big')
+
+        print("Adress in search table points to ", alpha_1)
 
         # step 3
         # look up N1
         while True:
             N_1 = self.A_s[alpha_1]
+            print("The node at that address looks like ", N_1)
             (v_1, r_1) = N_1
 
             H1 = SHA256.new(tau_3 + r_1).digest()
-            x = bytes(a ^ b for a,b in zip(v_1, H1)) # x = id_1 || 0 || addr_s_N+
+            x = XOR(v_1, H1)
+            print("And the decryption of that node looks like ", x)
 
-            files.append(x) # TODO only append the id
+            id, addr_s_N1 = x[:16], x[16:]
+
+            files.append(id)
+            if addr_s_N1 == zeros:
+               break
+            
+            break
 
         return files
 
