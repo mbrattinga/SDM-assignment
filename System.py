@@ -11,9 +11,8 @@ client_b = Client(id=1, consultant=consultant, database=database)
 
 
 files = [("0", ["cat","dog"]),("1", ["cat"])]
-(A_s, T_s) = client_a.encrypt(files)
-print()
-print()
+# (A_s, T_s) = client_a.encrypt(files)
+(A_s, T_s, A_d, T_d) = client_a.encrypt(files)
 print()
 print()
 print()
