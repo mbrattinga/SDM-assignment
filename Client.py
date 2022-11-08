@@ -36,18 +36,18 @@ class Client():
 
     
 
-    def del_token(K : tuple([bytes, bytes, bytes, bytes]), doc_id) -> tuple([bytes, bytes, bytes, int]):
-
-        F = HMAC.new(K[0], msg=doc_id, digestmod=SHA256).hexdigest()
-        G = HMAC.new(K[1], msg=doc_id, digestmod=SHA256).hexdigest()
-        P = HMAC.new(K[2], msg=doc_id, digestmod=SHA256).hexdigest()
-        delete_token = F, G, P, doc_id
+    def del_token(self, doc_id) -> tuple([bytes, bytes, bytes, int]):
+        Ff = HMAC.new(self.key1, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).hexdigest()
+        Gf = HMAC.new(self.key2, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).hexdigest()
+        Pf = HMAC.new(self.key3, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).hexdigest()
+        delete_token = Ff, Gf, Pf, doc_id
 
         return delete_token
 
 
     # def delete(index, ciphertexts, delete_token):
-    def delete(delete_token):
+    def delete(self, doc_id):
+        delete_token = self.del_token(doc_id)
         self.database.delete(delete_token)
 
 
@@ -60,10 +60,9 @@ class Client():
     def Search(self, w):
         return self.database.search(self.SrchToken(w))
 
-    # TODO replace all ^ xor operations by correct ones
     def encrypt(self, documents):
         # files = [{0:["keyord1","keyword2"]},{1: ["keyword1"]},{2:[...]},...]
-        z = 10000 #TODO
+        z = 2 #TODO
 
         # calculate total amount of keywords in all provided documents
         total_keywords_amounts = 0
@@ -82,6 +81,14 @@ class Client():
 
 
         for doc_id, doc_keywords  in documents:
+            
+            # DELETION
+            Ff = HMAC.new(self.key1, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
+            Gf = HMAC.new(self.key2, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
+            Pf = HMAC.new(self.key3, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
+            # END DELETION
+
+
             temp_doc_id = doc_id
             doc_id = MD5.new(bytes(doc_id, 'utf-8')).digest() # transform to 16 byte, not for security
             myprint("Processing document", temp_doc_id, "with doc_id", doc_id)
@@ -108,19 +115,23 @@ class Client():
                     temp = XOR(T_s[Fw], Gw)
                     # addr_s_N1 = addr_s_N1[16:] # Addr size is 16, so we do not need the first 16 leading zeros
                     addr_s_N1 = temp[:16]
-                    addr_d_N_plus_1 = temp[-16:]
+                    # DELETION
+                    addr_d_N1 = temp[-16:]
+                    # END DELETION
                     myprint("Already exists an entry in the search table, namely", T_s[Fw])
                     myprint("Therefore we xor this with Gw", Gw, "to obtain ", addr_s_N1)
                 else: # Else there is no document with this keyword yet, so Addr(N+1)=0 string as defined in the paper
                     addr_s_N1 = zeros
-                    addr_d_N_plus_1 = zeros
+                    # DELETION
+                    addr_d_N1 = zeros
+                    # END DELETION
                     myprint("No entry in the search table exists")
                 
                 # Put into search table lookup
 
-                # DELETION TODO
+                # DELETION 
                 while True:
-                    addr_d_D = randrange(0, delete_array_length -1) # TODO concatenate this
+                    addr_d_D = randrange(0, delete_array_length -1) 
                     if A_d[addr_d_D] == None:
                         break
                 # END DELETION
@@ -139,20 +150,18 @@ class Client():
                 A_s[addr_s_N] = Ni
 
                 # 3
-                Ff = HMAC.new(self.key1, msg=doc_id, digestmod=SHA256).digest()
-                Gf = HMAC.new(self.key2, msg=doc_id, digestmod=SHA256).digest()
-                Pf = HMAC.new(self.key3, msg=doc_id, digestmod=SHA256).digest()
-
                 # 3a
-                if Ff in T_d:
+                # doesnt really make sense for delete
+                """ if Ff in T_d:
                     addr_d_D1 = XOR(T_d[Ff], Gf)
                     addr_d_D1 = addr_d_D1[16:]
                 else:
-                    addr_d_D1 = zeros # Addr(D+1)=0 string
+                    addr_d_D1 = zeros # Addr(D+1)=0 string """
 
                 
+                addr_d_D1 = zeros
                 addr_d_N_minus_1 = zeros
-                # addr_d_N_plus_1 = zeros # zeroes if end
+                addr_d_N_plus_1 = zeros # zeroes if end
                 # addr_s_N
                 addr_s_minus_N1 = zeros
                 # addr_s_N1 
@@ -161,10 +170,10 @@ class Client():
                 H2 = SHA256.new(Pf + ri_prime).digest()
 
                 # print(len(addr_d_D1))
-                # print(len(addr_d_N_minus_1))
+                # print(len(addr_d_N_minus_1)) # points at pos of dual D in A_d (prev)
                 # print(len(addr_d_N_plus_1))
                 # print(len(addr_s_N.to_bytes(16,'big')))
-                # print(len(addr_s_minus_N1))
+                # print(len(addr_s_minus_N1)) # points at pos of N in A_s (prev)
                 # print(len(addr_s_N1))
                 # print(len(Fw))
                 # print(len(H2 * 4))
@@ -172,18 +181,19 @@ class Client():
                 Di = (XOR(addr_d_D1 + addr_d_N_minus_1 + addr_d_N_plus_1 + addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1 + Fw, H2 * 4), ri_prime)
                 A_d[addr_d_D] = Di
 
-                """ if addr_d_N_plus_1 != zeros:
-                    previous_d = A_d[int(addr_d_N_plus_1)]
+                # TODO TODO TODO
+                """ if addr_d_N1.decode("utf-8") != zeros: # if there are not words to delete
+                    previous_d = A_d[int(addr_d_N1)]
 
                     # homomorphically modify addresses
-                    xorstring = zeros + addr_d_D + 2 * zeros + addr_s_N + zeros + len(self.key1) * 2 * "\0"
+                    xorstring = zeros + addr_d_D.to_bytes(16,'big') + 2 * zeros + addr_s_N + zeros + len(self.key1) * 2 * "\0"
                     previous_d = XOR(previous_d, xorstring)
-                    A_d[addr_d_N_plus_1] = previous_d
+                    A_d[int(addr_d_N1)] = previous_d
                 
-                addr_d_D1 = addr_d_D # temporary Td pointer """
+                addr_d_D1 = addr_d_D.to_bytes(16,'big') # temporary Td pointer """
 
-                # 3b
-                T_d[Ff] = XOR(zeros + addr_d_D1, Gf) 
+            # 3b
+            T_d[Ff] = XOR(zeros + addr_d_D1, Gf) 
 
         
         # 4 create L_free list

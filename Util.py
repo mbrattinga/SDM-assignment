@@ -2,7 +2,7 @@
 def XOR(x, y):
     if not len(x) == len(y):
         Exception("XOR two values of unequal length is insupported: ", x, y)
-        print("AAAAAAAAAAAAAAA DIFFERENT LENGHTS0", x, y)
+        print("AAAAAAAAAAAAAAA DIFFERENT LENGHTS", x, y)
 
     """ int_x = int.from_bytes(x, 'big')
     int_y = int.from_bytes(y, 'big')
