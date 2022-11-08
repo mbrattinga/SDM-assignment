@@ -7,3 +7,7 @@ def XOR(x, y):
     int_y = int.from_bytes(y, 'big')
     int_z = int_x ^ int_y
     return int_z.to_bytes(len(x), 'big')
+
+def myprint(*msg):
+    # print(msg)
+    pass

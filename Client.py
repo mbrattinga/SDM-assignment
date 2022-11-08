@@ -1,4 +1,3 @@
-from ast import keyword
 import math
 from Database import Database
 from Consultant import Consultant
@@ -8,7 +7,7 @@ from Crypto.Random.random import randrange
 from Crypto.Util.Padding import pad
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Cipher import AES
-from Util import XOR
+from Util import XOR, myprint
 
 class Client():
 
@@ -45,7 +44,7 @@ class Client():
         return (Fw, Gw, Pw)
 
     def Search(self, w):
-        self.database.search(self.SrchToken(w))
+        return self.database.search(self.SrchToken(w))
 
     # TODO replace all ^ xor operations by correct ones
     def encrypt(self, documents):
@@ -68,9 +67,9 @@ class Client():
         for doc_id, doc_keywords  in documents:
             temp_doc_id = doc_id
             doc_id = MD5.new(bytes(doc_id, 'utf-8')).digest() # transform to 16 byte, not for security
-            print("Processing document", temp_doc_id, "with doc_id", doc_id)
+            myprint("Processing document", temp_doc_id, "with doc_id", doc_id)
             for w in doc_keywords:
-                print("Processing keyword ", w)
+                myprint("Processing keyword ", w)
                 Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
                 Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
                 Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
@@ -84,25 +83,28 @@ class Client():
                 ri = get_random_bytes(32)
                 H1 = SHA256.new(Pw + ri).digest()
 
-                print("Going to put this one is A_s[", addr_s_N,"]")
+                myprint("Going to put this one is A_s[", addr_s_N,"]")
 
 
                 # If there already is an entry in the search table, decrypt to get that entry, which is the Addr_s(N+1)
                 if Fw in T_s:
                     addr_s_N1 = XOR(T_s[Fw], Gw)
                     addr_s_N1 = addr_s_N1[16:] # Addr size is 16, so we do not need the first 16 leading zeros
-                    print("Already exists an entry in the search table, namely", T_s[Fw])
-                    print("Therefore we xor this with Gw", Gw, "to obtain ", addr_s_N1)
+                    myprint("Already exists an entry in the search table, namely", T_s[Fw])
+                    myprint("Therefore we xor this with Gw", Gw, "to obtain ", addr_s_N1)
                 else: # Else there is no document with this keyword yet, so Addr(N+1)=0 string as defined in the paper
                     addr_s_N1 = zeros
-                    print("No entry in the search table exists")
+                    myprint("No entry in the search table exists")
                 
                 # Put into search table lookup
                 T_s[Fw] = XOR(addr_s_N.to_bytes(32,'big'), Gw)
-                print("Updated search table to ", T_s[Fw], "which is", addr_s_N, "XOR with", Gw)
+                myprint("Updated search table to ", T_s[Fw], "which is", addr_s_N, "XOR with", Gw)
                 
                 # Node for search array is ((id || addr(N+1)) ^H1, ri)
-                Ni = (XOR(pad(doc_id + addr_s_N1, 32), H1), ri)
+                Ni = (XOR(doc_id + addr_s_N1, H1), ri)
+
+                myprint("The node stored in the search array looks like ", Ni)
+                myprint("Which before encryption was", doc_id + addr_s_N1, "for doc_id", doc_id, "and address next address", addr_s_N1)
                 
                 # Store in search array
                 A_s[addr_s_N] = Ni

@@ -1,6 +1,6 @@
 import math
 from Crypto.Hash import SHA256
-from Util import XOR
+from Util import XOR, myprint
 
 class Database():
 
@@ -21,8 +21,7 @@ class Database():
             raise Exception("The database has been set-up before, cannot do that twice!")
 
     def search(self, search_token):
-        print("Starting search on database...")
-        zeros = bytes("0" * int(math.ceil(math.log((len(self.A_s))))), 'utf-8')
+        myprint("Starting search on database...")
 
         # Parse search token
         (tau_1, tau_2, tau_3) = search_token
@@ -32,33 +31,38 @@ class Database():
 
         # Return empty list if tau1 not in search table
         if not tau_1 in self.T_s:
-            print("Could not find a result for this search...")
+            myprint("Could not find a result for this search...")
             return []
 
          # step 2
         # recover pointer to first node of list
         alpha_1 = int.from_bytes(XOR(self.T_s[tau_1], tau_2), 'big')
 
-        print("Adress in search table points to ", alpha_1)
+        myprint("Adress in search table points to ", alpha_1)
+
 
         # step 3
         # look up N1
+        address_lookup = alpha_1
         while True:
-            N_1 = self.A_s[alpha_1]
-            print("The node at that address looks like ", N_1)
+            N_1 = self.A_s[address_lookup]
+            myprint("The node at that address looks like ", N_1)
             (v_1, r_1) = N_1
 
             H1 = SHA256.new(tau_3 + r_1).digest()
             x = XOR(v_1, H1)
-            print("And the decryption of that node looks like ", x)
+            myprint("And the decryption of that node looks like ", x)
 
             id, addr_s_N1 = x[:16], x[16:]
+            myprint("Thus the id of this document is", id, "and the next address is ", addr_s_N1)
 
             files.append(id)
-            if addr_s_N1 == zeros:
-               break
-            
-            break
+            # if addr_s_N1.decode('utf-8') == "0" * 16:
+            if addr_s_N1 == bytes("0" * 16, 'utf-8'):
+                myprint("No more documents for this search query")
+                break
+            else:
+                address_lookup = int.from_bytes(addr_s_N1, 'big')
 
         return files
 
