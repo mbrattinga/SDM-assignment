@@ -51,14 +51,14 @@ class Client():
         self.database.delete(delete_token)
 
 
-    def SrchToken(self, w):
+    def srch_token(self, w):
         Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         return (Fw, Gw, Pw)
 
-    def Search(self, w):
-        return self.database.search(self.SrchToken(w))
+    def search(self, w):
+        return self.database.search(self.srch_token(w))
 
     def encrypt(self, documents):
         # files = [{0:["keyord1","keyword2"]},{1: ["keyword1"]},{2:[...]},...]

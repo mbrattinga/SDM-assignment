@@ -19,6 +19,8 @@ print()
 print("client search asdf result:", client_a.Search("asdf"))
 print("client search dog result:", client_a.Search("dog"))
 print("client search cat result:", client_a.Search("cat"))
+print("consultant search dog result:", consultant.search("dog", client_a.get_id()))
 
 # delete not working yet
 client_a.delete("1")
+
