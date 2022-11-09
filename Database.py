@@ -1,5 +1,6 @@
 import math
 from Crypto.Hash import SHA256
+from Crypto.Util.Padding import pad, unpad
 from Util import XOR, myprint
 
 class Database():
@@ -22,6 +23,35 @@ class Database():
 
     def add(self, add_token):
         print("Starting adding on database")
+        zeros = bytes("0" * 16, 'utf-8')
+
+        for lambda_i in add_token:
+            Fw, Gw, A_s_node, ri = lambda_i[:32], lambda_i[32:64], lambda_i[64:96], lambda_i[96:]
+
+            phi = int(unpad(self.T_s["free"], SHA256.block_size)) # find last free location
+            myprint("Phi is", phi)
+
+            self.T_s["free"] = pad(self.A_s[phi][0], SHA256.block_size) # update search table to previous free entry
+            myprint("New free entry: ", self.T_s["free"])
+
+            # check if there already is a node for this keyword
+            if Fw in self.T_s:
+                alpha_1 = XOR(self.T_s[Fw], Gw) # decrypt 
+            else: # there does not exist a node for this keyword yet
+                alpha_1 = zeros * 2 # we need 32 bytes zeros for this
+            
+            # update the previous free node with the node we add
+            self.A_s[phi] = (XOR(A_s_node, alpha_1),ri)
+
+            # update search table
+            self.T_s[Fw] = XOR(phi.to_bytes(32, 'big'), Gw)
+            
+            return True
+
+            
+
+
+
         return False
 
     def search(self, search_token):
@@ -62,7 +92,8 @@ class Database():
 
             files.append(id)
             # if addr_s_N1.decode('utf-8') == "0" * 16:
-            if addr_s_N1 == bytes("0" * 16, 'utf-8'):
+            myprint("Checking next address for equality", addr_s_N1, bytes("0" * 16, 'utf-8'), addr_s_N1 == bytes("0" * 16, 'utf-8'), addr_s_N1 == bytearray(16))
+            if addr_s_N1 == bytes("0" * 16, 'utf-8') or addr_s_N1 == bytearray(16): # bit hacky, either 0000 bytes or string 0000
                 myprint("No more documents for this search query")
                 break
             else:

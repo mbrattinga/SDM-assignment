@@ -58,12 +58,10 @@ class Client():
             Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
             Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
             ri = get_random_bytes(32)
-            rii = get_random_bytes(32)
 
             H1 = SHA256.new(Pw + ri).digest()
-            H2 = SHA256.new(Pw + rii).digest()
 
-            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri + XOR((zeros * 6) + Fw, H2) + rii # todo does zeros * 6 work here?
+            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri
             lambdas.append(lambda_i)
 
         return lambdas
