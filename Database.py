@@ -100,6 +100,7 @@ class Database():
                 break
             else:
                 address_lookup = int.from_bytes(addr_s_N1, 'big')
+                myprint("The next address to lookup ", addr_s_N1, "is integer ", address_lookup)
 
         return files
 

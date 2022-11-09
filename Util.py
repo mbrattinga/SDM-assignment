@@ -9,5 +9,5 @@ def XOR(x, y):
     return int_z.to_bytes(len(x), 'big')
 
 def myprint(*msg):
-    # print(msg)
+    print(msg)
     pass
