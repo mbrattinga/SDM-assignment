@@ -43,7 +43,7 @@ class Database():
             myprint("Could not find a result for this search...")
             return []
 
-         # step 2
+        # step 2
         # recover pointer to first node of list
         alpha_1 = int.from_bytes(XOR(self.T_s[tau_1], tau_2)[:16], 'big')
         alpha_1_prime = int.from_bytes(XOR(self.T_s[tau_1], tau_2)[16:], 'big')
@@ -69,7 +69,10 @@ class Database():
 
             files.append(id)
             # if addr_s_N1.decode('utf-8') == "0" * 16:
-            if addr_s_N1 == bytes("0" * 16, 'utf-8'):
+            # if addr_s_N1 == bytes("0" * 16, 'utf-8'):
+            zeros = 0
+            zeros = zeros.to_bytes(16, 'big')
+            if addr_s_N1 == zeros:
                 myprint("No more documents for this search query")
                 break
             else:
@@ -102,57 +105,58 @@ class Database():
     def delete(self, delete_token):
         
         # 1
-        token1, token2, token3, doc_id = delete_token
+        token1, token2, token3, doc = delete_token
+        doc_id, keywords = doc
 
         if token1 not in self.T_d:
             return
 
         # 2 
         # find the first node of L_f
-        alfa_1_prime = XOR(self.T_d[token1], token2) # position first node
+        alfa_1_prime = XOR(self.T_d[token1], token2) # position first node in A_d
 
         # 3
-        f = [] # to be removed
-        for i in range(1, len(f) + 1): # for each unique keywords in f
+        for i in range(1, len(keywords) + 1): # for each unique keywords in f
 
             # a
             # decrypt D_i
-            D_i, r = self.A_d[int(alfa_1_prime)]
+            D_i, r = self.A_d[int.from_bytes(alfa_1_prime, 'big')]
             D_i = XOR(D_i, self.H2.update(token3 + r) * 4)
-            alfa1 = D_i[:16]
-            alfa2 = D_i[16:32]
-            alfa3 = D_i[32:48]
-            alfa4 = D_i[48:64]
-            alfa5 = D_i[64:80]
-            alfa6 = D_i[80:96]
+            alfa1 = D_i[:16] # address_d(D1)
+            alfa2 = D_i[16:32] # address_d(N-1)
+            alfa3 = D_i[32:48] # address_d(N+1)
+            alfa4 = D_i[48:64] # address_s(N)
+            alfa5 = D_i[64:80] # address_s(N-1)
+            alfa6 = D_i[80:96] # address_s(N+1)
             mu = D_i[96:]
 
             # b
             # delete D_i (replace with random)
-            self.A_d[int(alfa_1_prime)] = get_random_bytes(len(self.A_d[int(alfa_1_prime)])) # 128 should be the sec param
+            self.A_d[int.from_bytes(alfa_1_prime, 'big')] = get_random_bytes(len(self.A_d[int.from_bytes(alfa_1_prime, 'big')])) # 128 should be the sec param
 
             # c
             # address of last free node
-            # zeros = bytes("0" * 16, 'utf-8') # TODO change number of zeros
-            gamma, zeros = self.T_s[free] 
+            # gamma: last free node in A_s
+            """ gamma, zeros = self.T_s[free]  """
 
             # d
             # free entry in the search table point to D_i’s dual
-            self.T_s[free] = alfa4, zeros
+            """ self.T_s[free] = alfa4, zeros """
 
             # e
-            # free location of D_i’s dual
-            self.A_s[int(alfa4)] = gamma, alfa_1_prime
+            # free location of D_i’s dual (i.e., N_i)
+            gamma = 0 # TODO to be removed
+            self.A_s[int.from_bytes(alfa4, 'big')] = gamma, alfa_1_prime
 
             # f
             # node that precedes D_i’s dual
-            # N_minus1 = something # TODO
+            # N_minus1 = alfa5 #TODO?
 
             # Update N−1’s “next pointer”
             # beta1 = id
             # beta2 = address
             # r_minus1 = randomness
-            beta1_beta2, r_minus1 = self.A_s[int(alfa5)]
+            beta1_beta2, r_minus1 = self.A_s[int.from_bytes(alfa5, 'big')]
             beta1 = beta1_beta2[:16]
             beta2 = beta1_beta2[16:32]
             self.A_s[int(alfa5)] = beta1 + XOR(XOR(beta2, alfa4), alfa6), r_minus1
@@ -166,30 +170,30 @@ class Database():
             # beta6 = address_s(N+1)
             # mu_star = F_key1(w)
             # r_star_minus1 = randomness
-            tmp, r_star_minus1 = self.A_d[int(alfa2)]
+            tmp, r_star_minus1 = self.A_d[int.from_bytes(alfa2, 'big')]
             beta1 = tmp[:16] # addr_d_D1
             beta2 = tmp[16:32] # addr_d_N_minus_1
             beta3 = tmp[32:48] # addr_d_N_plus_1
             beta4 = tmp[48:64] # addr_s_N.to_bytes(16,'big')
             beta5 = tmp[64:80] # addr_s_minus_N1
             beta6 = tmp[80:96] # addr_s_N1
-            mu_star = tmp[-32:] # Fw
-            self.A_d[alfa2] = beta1 + beta2 + XOR(XOR(beta3, alfa_1_prime), alfa3) + beta4 + beta5 + XOR(XOR(beta6, alfa4), alfa6) + mu_star, r_star_minus1
+            mu_star = tmp[96:128] # Fw
+            self.A_d[int.from_bytes(alfa2, 'big')] = beta1 + beta2 + XOR(XOR(beta3, alfa_1_prime), alfa3) + beta4 + beta5 + XOR(XOR(beta6, alfa4), alfa6) + mu_star, r_star_minus1
 
             # g
             # node that follows D_i’s dual
-            # N_plus1 = something # TODO
+            # N_plus1 = something # TODO?
 
             # Update N+1’s dual
-            tmp, r_star_plus1 = self.A_d[int(alfa3)]
+            tmp, r_star_plus1 = self.A_d[int.from_bytes(alfa3, 'big')]
             beta1 = tmp[:16] # addr_d_D1
             beta2 = tmp[16:32] # addr_d_N_minus_1
             beta3 = tmp[32:48] # addr_d_N_plus_1
             beta4 = tmp[48:64] # addr_s_N.to_bytes(16,'big')
             beta5 = tmp[64:80] # addr_s_minus_N1
             beta6 = tmp[80:96] # addr_s_N1
-            mu_star = tmp[-32:] # Fw
-            self.A_d[int(alfa3)] = beta1 + XOR(XOR(beta2, alfa_1_prime)) + alfa2 + beta3 + beta4 + XOR(XOR(beta5, alfa4), alfa5) + beta6 + mu_star, r_star_plus1
+            mu_star = tmp[96:128] # Fw
+            self.A_d[int.from_bytes(alfa3, 'big')] = beta1 + XOR(XOR(beta2, alfa_1_prime)) + alfa2 + beta3 + beta4 + XOR(XOR(beta5, alfa4), alfa5) + beta6 + mu_star, r_star_plus1
 
             # h
             alfa_1_prime = alfa1

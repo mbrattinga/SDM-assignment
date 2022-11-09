@@ -16,11 +16,12 @@ files = [("0", ["cat"]),("1", ["cat", "dog", "cow"]), ("2", ["cat", "cow"])]
 print()
 print()
 print()
-print("client search asdf result:", client_a.Search("asdf"))
-print("client search dog result:", client_a.Search("dog"))
-print("client search cat result:", client_a.Search("cat"))
-print("consultant search dog result:", consultant.search("dog", client_a.get_id()))
+print("client search asdf result:", client_a.search("asdf"))
+print("client search dog result:", client_a.search("dog"))
+print("client search cat result:", client_a.search("cat"))
+# print("consultant search dog result:", consultant.search("dog", client_a.get_id()))
 
-# delete not working yet
-client_a.delete("1")
+# delete not working yet! TODO
+client_a.delete(("0", ["cat"]))
+print("search after deleting cat", client_a.search("cat"))
 

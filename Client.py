@@ -36,18 +36,18 @@ class Client():
 
     
 
-    def del_token(self, doc_id) -> tuple([bytes, bytes, bytes, int]):
-        Ff = HMAC.new(self.key1, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).hexdigest()
-        Gf = HMAC.new(self.key2, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).hexdigest()
-        Pf = HMAC.new(self.key3, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).hexdigest()
-        delete_token = Ff, Gf, Pf, doc_id
+    def del_token(self, doc : tuple()) -> tuple([bytes, bytes, bytes, tuple()]):
+        Ff = HMAC.new(self.key1, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).hexdigest()
+        Gf = HMAC.new(self.key2, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).hexdigest()
+        Pf = HMAC.new(self.key3, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).hexdigest()
+        delete_token = Ff, Gf, Pf, doc
 
         return delete_token
 
 
     # def delete(index, ciphertexts, delete_token):
-    def delete(self, doc_id):
-        delete_token = self.del_token(doc_id)
+    def delete(self, doc):
+        delete_token = self.del_token(doc)
         self.database.delete(delete_token)
 
 
@@ -77,7 +77,8 @@ class Client():
         T_s = dict() # search table, maps keywords to the entry document in search array A_s
         T_d = dict() # delete table, maps documents to the keywords in it
         
-        zeros = bytes("0" * 16, 'utf-8')
+        zeros = 0
+        zeros = zeros.to_bytes(16,'big')
 
 
         for doc_id, doc_keywords  in documents:
@@ -86,6 +87,8 @@ class Client():
             Ff = HMAC.new(self.key1, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
             Gf = HMAC.new(self.key2, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
             Pf = HMAC.new(self.key3, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
+
+            addr_d_D1 = zeros
             # END DELETION
 
 
@@ -120,22 +123,25 @@ class Client():
                     # END DELETION
                     myprint("Already exists an entry in the search table, namely", T_s[Fw])
                     myprint("Therefore we xor this with Gw", Gw, "to obtain ", addr_s_N1)
-                else: # Else there is no document with this keyword yet, so Addr(N+1)=0 string as defined in the paper
+                else: # Else there is no document with this keyword yet, 
+                    # so Addr_s(N+1)=Addr_d(N+1)=0 string as defined in the paper
                     addr_s_N1 = zeros
                     # DELETION
                     addr_d_N1 = zeros
                     # END DELETION
                     myprint("No entry in the search table exists")
                 
-                # Put into search table lookup
 
                 # DELETION 
                 while True:
+                    # temporary pointer, stable only at the end of the word loop
+                    # i.e. when one document has been processed
                     addr_d_D = randrange(0, delete_array_length -1) 
                     if A_d[addr_d_D] == None:
                         break
                 # END DELETION
                 
+                # Put into search table lookup
                 # T_s[Fw] = XOR(addr_s_N.to_bytes(32,'big'), Gw)
                 T_s[Fw] = XOR(addr_s_N.to_bytes(16,'big') + addr_d_D.to_bytes(16,'big'), Gw)
                 myprint("Updated search table to ", T_s[Fw], "which is", addr_s_N, "XOR with", Gw)
@@ -159,9 +165,9 @@ class Client():
                     addr_d_D1 = zeros # Addr(D+1)=0 string """
 
                 
-                addr_d_D1 = zeros
+                # addr_d_D1 = zeros # defined before the words loop
                 addr_d_N_minus_1 = zeros
-                addr_d_N_plus_1 = zeros # zeroes if end
+                # addr_d_N1 = zeros # zeroes if end
                 # addr_s_N
                 addr_s_minus_N1 = zeros
                 # addr_s_N1 
@@ -171,26 +177,25 @@ class Client():
 
                 # print(len(addr_d_D1))
                 # print(len(addr_d_N_minus_1)) # points at pos of dual D in A_d (prev)
-                # print(len(addr_d_N_plus_1))
+                # print(len(addr_d_N1))
                 # print(len(addr_s_N.to_bytes(16,'big')))
                 # print(len(addr_s_minus_N1)) # points at pos of N in A_s (prev)
                 # print(len(addr_s_N1))
                 # print(len(Fw))
                 # print(len(H2 * 4))
                 
-                Di = (XOR(addr_d_D1 + addr_d_N_minus_1 + addr_d_N_plus_1 + addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1 + Fw, H2 * 4), ri_prime)
+                Di = (XOR(addr_d_D1 + addr_d_N_minus_1 + addr_d_N1 + addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1 + Fw, H2 * 4), ri_prime)
                 A_d[addr_d_D] = Di
 
-                # TODO TODO TODO
-                """ if addr_d_N1.decode("utf-8") != zeros: # if there are not words to delete
-                    previous_d = A_d[int(addr_d_N1)]
+                if addr_d_N1 != zeros: # if there are no words to delete
+                    previous_d, ri_prime = A_d[int.from_bytes(addr_d_N1, 'big')]
 
                     # homomorphically modify addresses
-                    xorstring = zeros + addr_d_D.to_bytes(16,'big') + 2 * zeros + addr_s_N + zeros + len(self.key1) * 2 * "\0"
+                    xorstring = zeros + addr_d_D.to_bytes(16,'big') + 2 * zeros + addr_s_N.to_bytes(16,'big') + zeros + 2 * zeros
                     previous_d = XOR(previous_d, xorstring)
-                    A_d[int(addr_d_N1)] = previous_d
+                    A_d[int.from_bytes(addr_d_N1, 'big')] = previous_d, ri_prime
                 
-                addr_d_D1 = addr_d_D.to_bytes(16,'big') # temporary Td pointer """
+                addr_d_D1 = addr_d_D.to_bytes(16,'big') # temporary Td pointer
 
             # 3b
             T_d[Ff] = XOR(zeros + addr_d_D1, Gf) 
