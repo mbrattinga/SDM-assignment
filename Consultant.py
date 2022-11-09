@@ -42,7 +42,7 @@ class Consultant():
         key3 = PBKDF2(key, 3, 32, count=1000000, hmac_hash_module=SHA512)
 
         doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
-        zeros = bytes("0" * 16, 'utf-8')
+        zeros = bytearray(16)
         lambdas = list()
         for w in document[1]:
             Fw = HMAC.new(key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()

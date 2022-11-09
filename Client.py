@@ -51,7 +51,7 @@ class Client():
         # document = ("0", ["keyword1", "keyword2"])
 
         doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
-        zeros = bytes("0" * 16, 'utf-8')
+        zeros = bytearray(16)
         lambdas = list()
         for w in document[1]:
             Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
@@ -84,7 +84,7 @@ class Client():
         A_s = [None] * search_array_length # search array 
         T_s = dict() # search table, maps keywords to the entry document in search array A_s
         
-        zeros = bytes("0" * 16, 'utf-8')
+        zeros = bytearray(16)
 
 
         for doc_id, doc_keywords  in documents:
@@ -134,7 +134,7 @@ class Client():
 
         
         # 4 create L_free list
-        previous_free = zeros*2
+        previous_free = bytearray(32)
         for i in range(z):
             while True:
                 free = randrange(0, len(A_s))

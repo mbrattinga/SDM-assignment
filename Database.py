@@ -23,7 +23,7 @@ class Database():
 
     def add(self, add_token):
         myprint("Starting adding on database")
-        zeros = bytes("0" * 16, 'utf-8')
+        zeros = bytearray(16)
 
         for lambda_i in add_token:
             Fw, Gw, A_s_node, ri = lambda_i[:32], lambda_i[32:64], lambda_i[64:96], lambda_i[96:]
@@ -33,17 +33,18 @@ class Database():
             myprint("Phi is", phi)
 
             # self.T_s["free"] = pad(self.A_s[phi][0], SHA256.block_size) # update search table to previous free entry
-            self.T_s["free"] = self.A_s[phi][0] # update search table to previous free entry
+            self.T_s["free"] = self.A_s[phi][0] # update search table to point to previous free entry
             myprint("New free entry: ", self.T_s["free"])
 
             # check if there already is a node for this keyword
             if Fw in self.T_s:
-                alpha_1 = XOR(self.T_s[Fw], Gw) # decrypt 
+                alpha_1 = XOR(self.T_s[Fw], Gw) # decrypt to obtain address of first node for this word
+                alpha_1 = alpha_1[16:] # we want 16 bytes, so remove leading zeros
             else: # there does not exist a node for this keyword yet
-                alpha_1 = zeros * 2 # we need 32 bytes zeros for this
+                alpha_1 = zeros
             
-            # update the previous free node with the node we add
-            self.A_s[phi] = (XOR(A_s_node, alpha_1),ri)
+            # insert new node in the search array (on the spot which we found to be free earlier on)
+            self.A_s[phi] = (XOR(A_s_node, (zeros + alpha_1)),ri)
 
             # update search table
             self.T_s[Fw] = XOR(phi.to_bytes(32, 'big'), Gw)
