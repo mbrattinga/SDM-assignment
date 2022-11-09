@@ -37,9 +37,9 @@ class Client():
     
 
     def del_token(self, doc : tuple()) -> tuple([bytes, bytes, bytes, tuple()]):
-        Ff = HMAC.new(self.key1, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).hexdigest()
-        Gf = HMAC.new(self.key2, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).hexdigest()
-        Pf = HMAC.new(self.key3, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).hexdigest()
+        Ff = HMAC.new(self.key1, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
+        Gf = HMAC.new(self.key2, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
+        Pf = HMAC.new(self.key3, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
         delete_token = Ff, Gf, Pf, doc
 
         return delete_token
@@ -176,6 +176,7 @@ class Client():
                 myprint("Which before encryption was", doc_id + addr_s_N1, "for doc_id", doc_id, "and address next address", addr_s_N1)
                 
                 # Store in search array
+                # 32B, 32B
                 A_s[addr_s_N] = Ni
 
                 # 3
@@ -207,7 +208,8 @@ class Client():
                 # print(len(Fw))
                 # print(len(H2 * 4))
                 
-                Di = (XOR(addr_d_D1 + addr_d_N_minus_1 + addr_d_N1 + addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1 + Fw, H2 * 4), ri_prime)
+                addresses_block = addr_d_D1 + addr_d_N_minus_1 + addr_d_N1 + addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1
+                Di = (XOR(addresses_block + Fw, H2 * 4), ri_prime)
                 A_d[addr_d_D] = Di
 
                 if addr_d_N1 != zeros: # if there are no words to delete
@@ -242,10 +244,14 @@ class Client():
         
 
         # 5 fill remain A_s and A_d with random strings of length that fits in A_s
-        """ for i in range(len(A_s)):
+        for i in range(len(A_s)):
             if A_s[i] == None:
-                A_s[i] = (get_random_bytes(int(math.ceil(math.log(len(A_s),10)))), get_random_bytes(int(math.ceil(math.log(len(A_s),10)))))
- """
+                # A_s[i] = get_random_bytes(int(math.ceil(math.log(len(A_s),10)))), get_random_bytes(int(math.ceil(math.log(len(A_s),10))))
+                A_s[i] = b'empty', b'empty' # DEBUG
+            if A_d[i] == None:
+                # A_d[i] = get_random_bytes(int(math.ceil(math.log(len(A_d),10)))), get_random_bytes(int(math.ceil(math.log(len(A_d),10))))
+                A_d[i] = b'empty', b'empty' # DEBUG
+
         # 6 encrypt each document using AES
         # TODO leave this for now
 
