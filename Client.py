@@ -60,6 +60,30 @@ class Client():
     def search(self, w):
         return self.database.search(self.srch_token(w))
 
+
+    def add_token(self, document):
+        # document = ("0", ["keyword1", "keyword2"])
+
+        doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
+        zeros = bytearray(16)
+        lambdas = list()
+        for w in document[1]:
+            Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+            Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+            Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+            ri = get_random_bytes(32)
+
+            H1 = SHA256.new(Pw + ri).digest()
+
+            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri
+            lambdas.append(lambda_i)
+
+        return lambdas
+
+    def add(self, document):
+        return self.database.add(self.add_token(document))
+
+
     def encrypt(self, documents):
         # files = [{0:["keyord1","keyword2"]},{1: ["keyword1"]},{2:[...]},...]
         z = 2 #TODO
@@ -77,8 +101,7 @@ class Client():
         T_s = dict() # search table, maps keywords to the entry document in search array A_s
         T_d = dict() # delete table, maps documents to the keywords in it
         
-        zeros = 0
-        zeros = zeros.to_bytes(16,'big')
+        zeros = bytearray(16)
 
 
         for doc_id, doc_keywords  in documents:
@@ -202,7 +225,7 @@ class Client():
 
         
         # 4 create L_free list
-        """ previous_free = zeros
+        previous_free = bytearray(32)
         for i in range(z):
             
             while True:
@@ -210,10 +233,11 @@ class Client():
                 if A_s[free] is None:
                     break
             
-            A_s[free] = (pad(previous_free, SHA256.block_size),  bytes(bytearray(32))) # TODO this does not include ID?
-            previous_free = bytes(str(free), 'utf-8')
+            A_s[free] = (previous_free,  bytes(bytearray(32))) # TODO this does not include ID?
+            # previous_free = bytes(str(free), 'utf-8')
+            previous_free = free.to_bytes(32, 'big')
         
-        T_s["free"] = pad(previous_free, SHA256.block_size) """
+        T_s["free"] = previous_free
 
         
 

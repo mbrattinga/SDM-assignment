@@ -1,5 +1,6 @@
 import math
 from Crypto.Hash import SHA256
+from Crypto.Util.Padding import pad, unpad
 from Util import XOR, myprint
 
 class Database():
@@ -28,6 +29,42 @@ class Database():
             self.T_d = T_d
         else:
             raise Exception("The database has been set-up before, cannot do that twice!")
+
+    def add(self, add_token):
+        myprint("Starting adding on database")
+        zeros = bytearray(16)
+
+        for lambda_i in add_token:
+            Fw, Gw, A_s_node, ri = lambda_i[:32], lambda_i[32:64], lambda_i[64:96], lambda_i[96:]
+            myprint("Search table free is: ", self.T_s["free"])
+            # phi = int(unpad(self.T_s["free"], SHA256.block_size)) # find last free location
+            phi = int.from_bytes(self.T_s["free"], 'big')
+            myprint("Phi is", phi)
+
+            # self.T_s["free"] = pad(self.A_s[phi][0], SHA256.block_size) # update search table to previous free entry
+            self.T_s["free"] = self.A_s[phi][0] # update search table to point to previous free entry
+            myprint("New free entry: ", self.T_s["free"])
+
+            # check if there already is a node for this keyword
+            if Fw in self.T_s:
+                alpha_1 = XOR(self.T_s[Fw], Gw) # decrypt to obtain address of first node for this word
+                alpha_1 = alpha_1[16:] # we want 16 bytes, so remove leading zeros
+            else: # there does not exist a node for this keyword yet
+                alpha_1 = zeros
+            
+            # insert new node in the search array (on the spot which we found to be free earlier on)
+            self.A_s[phi] = (XOR(A_s_node, (zeros + alpha_1)),ri)
+
+            # update search table
+            self.T_s[Fw] = XOR(phi.to_bytes(32, 'big'), Gw)
+            
+            return True
+
+            
+
+
+
+        return False
 
     def search(self, search_token):
         myprint("Starting search on database...")
@@ -70,13 +107,13 @@ class Database():
             files.append(id)
             # if addr_s_N1.decode('utf-8') == "0" * 16:
             # if addr_s_N1 == bytes("0" * 16, 'utf-8'):
-            zeros = 0
-            zeros = zeros.to_bytes(16, 'big')
+            zeros = bytearray(16)
             if addr_s_N1 == zeros:
                 myprint("No more documents for this search query")
                 break
             else:
                 address_lookup = int.from_bytes(addr_s_N1, 'big')
+                myprint("The next address to lookup ", addr_s_N1, "is integer ", address_lookup)
 
         return files
 
