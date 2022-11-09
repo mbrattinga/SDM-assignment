@@ -46,7 +46,32 @@ class Client():
     def search(self, w):
         return self.database.search(self.srch_token(w))
 
-    # TODO replace all ^ xor operations by correct ones
+
+    def add_token(self, document):
+        # document = ("0", ["keyword1", "keyword2"])
+
+        doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
+        zeros = bytes("0" * 16, 'utf-8')
+        lambdas = list()
+        for w in document[1]:
+            Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+            Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+            Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
+            ri = get_random_bytes(32)
+            rii = get_random_bytes(32)
+
+            H1 = SHA256.new(Pw + ri).digest()
+            H2 = SHA256.new(Pw + rii).digest()
+
+            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri + XOR((zeros * 6) + Fw, H2) + rii # todo does zeros * 6 work here?
+            lambdas.append(lambda_i)
+
+        return lambdas
+
+    def add(self, document):
+        return self.database.add(self.add_token(document))
+
+
     def encrypt(self, documents):
         # files = [("0", ["keyord1","keyword2"]),("1", ["keyword1"]),("2",[...]),...]
         z = 10000 #TODO

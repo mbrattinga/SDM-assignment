@@ -20,6 +20,10 @@ class Database():
         else:
             raise Exception("The database has been set-up before, cannot do that twice!")
 
+    def add(self, add_token):
+        print("Starting adding on database")
+        return False
+
     def search(self, search_token):
         myprint("Starting search on database...")
 
