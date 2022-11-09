@@ -208,11 +208,12 @@ class Client():
                 # print(len(Fw))
                 # print(len(H2 * 4))
                 
-                addresses_block = addr_d_D1 + addr_d_N_minus_1 + addr_d_N1 + addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1
+                addresses_block = addr_d_D1 + addr_d_N_minus_1 + addr_d_N1 + \
+                                  addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1
                 Di = (XOR(addresses_block + Fw, H2 * 4), ri_prime)
                 A_d[addr_d_D] = Di
 
-                if addr_d_N1 != zeros: # if there are no words to delete
+                if addr_d_N1 != zeros: # if there are no words to delete TODO Doesnt make sense
                     previous_d, ri_prime = A_d[int.from_bytes(addr_d_N1, 'big')]
 
                     # homomorphically modify addresses

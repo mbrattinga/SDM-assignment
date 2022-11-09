@@ -2,6 +2,7 @@ from Client import Client
 from Database import Database
 from Consultant import Consultant
 
+from Crypto.Hash import MD5
 
 database = Database()
 
@@ -9,30 +10,37 @@ consultant = Consultant(database)
 client_a = Client(id=0, consultant=consultant, database=database)
 client_b = Client(id=1, consultant=consultant, database=database)
 
+md5_to_files = {}
 
-files = [("0", ["cat"]),("1", ["cat", "dog", "cow"]), ("2", ["cat", "cow"])]
-# files = [("0", ["cat", "cow"])]
+files = [("0", ["cat", "dog", "cow", "lion"])]
+# files = [("0", ["cat"]),("1", ["cat", "dog", "cow"]), ("2", ["cat", "cow"])]
+print(files)
+for file in files:
+    md5_to_files[MD5.new(bytes(file[0], 'utf-8')).digest()] = file[0]
 # (A_s, T_s) = client_a.encrypt(files)
 (A_s, T_s, A_d, T_d) = client_a.encrypt(files)
 print()
-print("client_a searches cow:", client_a.search("cow"))
-print("client_a searches dog:", client_a.search("dog"))
-print("client_a searches cat:", client_a.search("cat"))
-# delete not working yet! TODO
-client_a.delete(("0", ["cat"]))
-print("search cat after deleting document 0", client_a.search("cat"))
-print("search dog after deleting document 0", client_a.search("dog"))
-print("search cow after deleting document 0", client_a.search("cow"))
+print("client_a searches cat:", [md5_to_files[id] for id in client_a.search("cat")])
+print("client_a searches dog:", [md5_to_files[id] for id in client_a.search("dog")])
+print("client_a searches cow:", [md5_to_files[id] for id in client_a.search("cow")])
+print("client_a searches lion:", [md5_to_files[id] for id in client_a.search("lion")])
 
-client_a.delete(("1", ["cat", "dog", "cow"]))
-print("search cat after deleting document 1", client_a.search("cat"))
-print("search dog after deleting document 1", client_a.search("dog"))
-print("search cow after deleting document 1", client_a.search("cow"))
+client_a.delete(("0", ["cat", "dog", "cow", "lion"]))
+print("search cat after deleting document 0", [md5_to_files[id] for id in client_a.search("cat")])
+print("search dog after deleting document 0", [md5_to_files[id] for id in client_a.search("dog")])
+print("search cow after deleting document 0", [md5_to_files[id] for id in client_a.search("cow")])
+print("search lion after deleting document 0", [md5_to_files[id] for id in client_a.search("lion")])
+
+""" client_a.delete(("1", ["cat", "dog", "cow"]))
+print("search cat after deleting document 1", [md5_to_files[id] for id in client_a.search("cat")])
+print("search dog after deleting document 1", [md5_to_files[id] for id in client_a.search("dog")])
+print("search cow after deleting document 1", [md5_to_files[id] for id in client_a.search("cow")])
 
 client_a.delete(("2", ["cat", "cow"]))
-print("search cat after deleting document 2", client_a.search("cat"))
-print("search dog after deleting document 2", client_a.search("dog"))
-print("search cow after deleting document 2", client_a.search("cow"))
+print("search cat after deleting document 2", [md5_to_files[id] for id in client_a.search("cat")])
+print("search dog after deleting document 2", [md5_to_files[id] for id in client_a.search("dog")])
+print("search cow after deleting document 2", [md5_to_files[id] for id in client_a.search("cow")])
+ """
 
 """ print("consultant search dog for client_a, should yield 1 result:", consultant.search("dog", client_a.get_id()))
 print()
