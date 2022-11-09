@@ -22,16 +22,18 @@ class Database():
             raise Exception("The database has been set-up before, cannot do that twice!")
 
     def add(self, add_token):
-        print("Starting adding on database")
+        myprint("Starting adding on database")
         zeros = bytes("0" * 16, 'utf-8')
 
         for lambda_i in add_token:
             Fw, Gw, A_s_node, ri = lambda_i[:32], lambda_i[32:64], lambda_i[64:96], lambda_i[96:]
-
-            phi = int(unpad(self.T_s["free"], SHA256.block_size)) # find last free location
+            myprint("Search table free is: ", self.T_s["free"])
+            # phi = int(unpad(self.T_s["free"], SHA256.block_size)) # find last free location
+            phi = int.from_bytes(self.T_s["free"], 'big')
             myprint("Phi is", phi)
 
-            self.T_s["free"] = pad(self.A_s[phi][0], SHA256.block_size) # update search table to previous free entry
+            # self.T_s["free"] = pad(self.A_s[phi][0], SHA256.block_size) # update search table to previous free entry
+            self.T_s["free"] = self.A_s[phi][0] # update search table to previous free entry
             myprint("New free entry: ", self.T_s["free"])
 
             # check if there already is a node for this keyword

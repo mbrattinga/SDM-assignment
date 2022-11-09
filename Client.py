@@ -134,17 +134,18 @@ class Client():
 
         
         # 4 create L_free list
-        previous_free = zeros
+        previous_free = zeros*2
         for i in range(z):
             while True:
                 free = randrange(0, len(A_s))
                 if A_s[free] is None:
                     break
             
-            A_s[free] = (pad(previous_free, SHA256.block_size),  bytes(bytearray(32))) # TODO this does not include ID?
-            previous_free = bytes(str(free), 'utf-8')
+            A_s[free] = (previous_free,  bytes(bytearray(32))) # TODO this does not include ID?
+            # previous_free = bytes(str(free), 'utf-8')
+            previous_free = free.to_bytes(32, 'big')
         
-        T_s["free"] = pad(previous_free, SHA256.block_size)
+        T_s["free"] = previous_free
 
         
 
