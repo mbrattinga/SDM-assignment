@@ -25,25 +25,25 @@ print("client_a searches dog:", [md5_to_files[id] for id in client_a.search("dog
 print("client_a searches cow:", [md5_to_files[id] for id in client_a.search("cow")])
 # print("client_a searches lion:", [md5_to_files[id] for id in client_a.search("lion")])
 
-""" client_a.delete(("0", ["cat"]))
+client_a.delete(("0", ["cat"]))
 print("search cat after deleting document 0", [md5_to_files[id] for id in client_a.search("cat")])
 print("search dog after deleting document 0", [md5_to_files[id] for id in client_a.search("dog")])
 print("search cow after deleting document 0", [md5_to_files[id] for id in client_a.search("cow")])
 # print("search lion after deleting document 0", [md5_to_files[id] for id in client_a.search("lion")])
 
-client_a.delete(("1", ["cat", "dog", "cow"]))
-print("search cat after deleting document 1", [md5_to_files[id] for id in client_a.search("cat")])
-print("search dog after deleting document 1", [md5_to_files[id] for id in client_a.search("dog")])
-print("search cow after deleting document 1", [md5_to_files[id] for id in client_a.search("cow")])
+consultant.delete(("1", ["cat", "dog", "cow"]), client_a.get_id())
+print("search cat after consultant deleting document 1", [md5_to_files[id] for id in client_a.search("cat")])
+print("search dog after consultant deleting document 1", [md5_to_files[id] for id in client_a.search("dog")])
+print("search cow after consultant deleting document 1", [md5_to_files[id] for id in client_a.search("cow")])
 
 client_a.delete(("2", ["cat", "cow"]))
 print("search cat after deleting document 2", [md5_to_files[id] for id in client_a.search("cat")])
 print("search dog after deleting document 2", [md5_to_files[id] for id in client_a.search("dog")])
-print("search cow after deleting document 2", [md5_to_files[id] for id in client_a.search("cow")]) """
+print("search cow after deleting document 2", [md5_to_files[id] for id in client_a.search("cow")])
 
 #########################################################################################################
 
-print("consultant search dog for client_a, should yield 1 result:", [md5_to_files[id] for id in consultant.search("dog", client_a.get_id())])
+""" print("consultant search dog for client_a, should yield 1 result:", [md5_to_files[id] for id in consultant.search("dog", client_a.get_id())])
 print()
 md5_to_files[MD5.new(bytes("myfile", 'utf-8')).digest()] = "myfile"
 print("client_a adds document with cow:", client_a.add(("myfile",["cow"])))
@@ -64,5 +64,5 @@ print("client_b adds document with dog:", client_b.add(("invoice33",["dog"])))
 
 print("client_b searches dog, should yield 1 result:", [md5_to_files[id] for id in client_b.search("dog")])
 print("consultant search dog for client_b again, should yield in 1 result:", [md5_to_files[id] for id in consultant.search("dog", client_b.get_id())])
-print()
+print() """
 

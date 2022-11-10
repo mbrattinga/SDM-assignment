@@ -90,3 +90,29 @@ class Consultant():
         Gw = HMAC.new(key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         Pw = HMAC.new(key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         return (Fw, Gw, Pw)
+
+    def del_token(self, doc : tuple(), client_id: int) -> tuple([bytes, bytes, bytes, tuple()]):
+
+        if client_id in self.keycache:
+            key = self.keycache[client_id]
+        else:
+            key = self.key_gen(client_id)
+
+        # TODO this is very slow to do for each search query...
+        key1 = PBKDF2(key, 1, 32, count=1000000, hmac_hash_module=SHA512)
+        key2 = PBKDF2(key, 2, 32, count=1000000, hmac_hash_module=SHA512)
+        key3 = PBKDF2(key, 3, 32, count=1000000, hmac_hash_module=SHA512)
+
+
+        Ff = HMAC.new(key1, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
+        Gf = HMAC.new(key2, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
+        Pf = HMAC.new(key3, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
+        delete_token = Ff, Gf, Pf, doc
+
+        return delete_token
+
+
+    # def delete(index, ciphertexts, delete_token):
+    def delete(self, doc, client_id: int):
+        delete_token = self.del_token(doc, client_id)
+        self.database.delete(delete_token)
