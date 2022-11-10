@@ -10,7 +10,7 @@ class Consultant():
     def __init__(self, database):
         # generate master key
         self.master_key = get_random_bytes(self.SECURITY_PARAMETER)
-        print("Master key:", self.master_key)
+        # print("Master key:", self.master_key)
 
         # set database
         self.database = database
@@ -41,18 +41,29 @@ class Consultant():
         key2 = PBKDF2(key, 2, 32, count=1000000, hmac_hash_module=SHA512)
         key3 = PBKDF2(key, 3, 32, count=1000000, hmac_hash_module=SHA512)
 
+        Ff = HMAC.new(key1, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
+        Gf = HMAC.new(key2, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
+        Pf = HMAC.new(key3, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
+
         doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
         zeros = bytearray(16)
         lambdas = list()
+
+        lambdas.append(Ff)
+        lambdas.append(Gf)
+
         for w in document[1]:
             Fw = HMAC.new(key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
             Gw = HMAC.new(key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
             Pw = HMAC.new(key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
-            ri = get_random_bytes(32)
+
+            ri, ri_prime = get_random_bytes(32), get_random_bytes(32)
 
             H1 = SHA256.new(Pw + ri).digest()
+            H2 = SHA256.new(Pf + ri_prime).digest()
 
-            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri
+            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri + \
+                XOR(zeros * 6 + Fw, H2 * 4) + ri_prime
             lambdas.append(lambda_i)
 
         return lambdas

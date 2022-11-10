@@ -64,18 +64,30 @@ class Client():
     def add_token(self, document):
         # document = ("0", ["keyword1", "keyword2"])
 
+        Ff = HMAC.new(self.key1, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
+        Gf = HMAC.new(self.key2, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
+        Pf = HMAC.new(self.key3, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
+
         doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
         zeros = bytearray(16)
         lambdas = list()
+
+        lambdas.append(Ff)
+        lambdas.append(Gf)
+
         for w in document[1]:
             Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
             Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
             Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
-            ri = get_random_bytes(32)
+            
+            ri, ri_prime = get_random_bytes(32), get_random_bytes(32)
 
             H1 = SHA256.new(Pw + ri).digest()
+            H2 = SHA256.new(Pf + ri_prime).digest()
 
-            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri
+            # lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri
+            lambda_i = Fw + Gw + XOR(doc_id + zeros, H1) + ri + \
+                XOR(zeros * 6 + Fw, H2 * 4) + ri_prime
             lambdas.append(lambda_i)
 
         return lambdas
@@ -86,7 +98,7 @@ class Client():
 
     def encrypt(self, documents):
         # files = [{0:["keyord1","keyword2"]},{1: ["keyword1"]},{2:[...]},...]
-        z = 2 #TODO
+        z = 10 #TODO
 
         # calculate total amount of keywords in all provided documents
         total_keywords_amounts = 0
@@ -126,7 +138,7 @@ class Client():
                 
                 # find random address in A_s that is not used yet
                 while True:
-                    addr_s_N = randrange(0, search_array_length -1)
+                    addr_s_N = randrange(1, search_array_length -1)
                     if A_s[addr_s_N] == None:
                         break
                 
@@ -141,8 +153,10 @@ class Client():
                     temp = XOR(T_s[Fw], Gw)
                     # addr_s_N1 = addr_s_N1[16:] # Addr size is 16, so we do not need the first 16 leading zeros
                     addr_s_N1 = temp[:16]
+                    # addr_s_N1 = int.from_bytes(addr_s_N1, 'big')
                     # DELETION
                     addr_d_N1 = temp[-16:]
+                    # addr_d_N1 = int.from_bytes(addr_d_N1, 'big')
                     # END DELETION
                     myprint("Already exists an entry in the search table, namely", T_s[Fw])
                     myprint("Therefore we xor this with Gw", Gw, "to obtain ", addr_s_N1)
@@ -159,7 +173,7 @@ class Client():
                 while True:
                     # temporary pointer, stable only at the end of the word loop
                     # i.e. when one document has been processed
-                    addr_d_D = randrange(0, delete_array_length -1) 
+                    addr_d_D = randrange(1, delete_array_length -1) 
                     if A_d[addr_d_D] == None:
                         break
                 # END DELETION
@@ -170,6 +184,7 @@ class Client():
                 myprint("Updated search table to ", T_s[Fw], "which is", addr_s_N, "XOR with", Gw)
                 
                 # Node for search array is ((id || addr(N+1)) ^H1, ri)
+                # 32B. 32B
                 Ni = (XOR(doc_id + addr_s_N1, H1), ri)
 
                 myprint("The node stored in the search array looks like ", Ni)
@@ -208,18 +223,25 @@ class Client():
                 # print(len(Fw))
                 # print(len(H2 * 4))
                 
+                # if addr_d_N1 != zeros:
+                #     addr_d_N1 = addr_d_N1.to_bytes(16, 'big')
+                # if addr_s_N1 != zeros:
+                #     addr_s_N1 = addr_s_N1.to_bytes(16, 'big')
                 addresses_block = addr_d_D1 + addr_d_N_minus_1 + addr_d_N1 + \
                                   addr_s_N.to_bytes(16,'big') + addr_s_minus_N1 + addr_s_N1
                 Di = (XOR(addresses_block + Fw, H2 * 4), ri_prime)
                 A_d[addr_d_D] = Di
 
-                if addr_d_N1 != zeros: # if there are no words to delete TODO Doesnt make sense
+                # if addr_d_N1 != zeros: # if there are no words to delete TODO comment doesnt make sense
+                if addr_d_N1 is not zeros: # if there are no words to delete TODO comment doesnt make sense
                     previous_d, ri_prime = A_d[int.from_bytes(addr_d_N1, 'big')]
+                    # previous_d, ri_prime = A_d[addr_d_N1]
 
                     # homomorphically modify addresses
                     xorstring = zeros + addr_d_D.to_bytes(16,'big') + 2 * zeros + addr_s_N.to_bytes(16,'big') + zeros + 2 * zeros
                     previous_d = XOR(previous_d, xorstring)
                     A_d[int.from_bytes(addr_d_N1, 'big')] = previous_d, ri_prime
+                    # A_d[addr_d_N1] = previous_d, ri_prime
                 
                 addr_d_D1 = addr_d_D.to_bytes(16,'big') # temporary Td pointer
 
@@ -229,10 +251,10 @@ class Client():
         
         # 4 create L_free list
         previous_free = bytearray(32)
-        for i in range(z):
+        for i in range(z - 1):
             
             while True:
-                free = randrange(0, len(A_s))
+                free = randrange(1, len(A_s))
                 if A_s[free] is None:
                     break
             
@@ -248,10 +270,12 @@ class Client():
         for i in range(len(A_s)):
             if A_s[i] == None:
                 # A_s[i] = get_random_bytes(int(math.ceil(math.log(len(A_s),10)))), get_random_bytes(int(math.ceil(math.log(len(A_s),10))))
-                A_s[i] = b'empty', b'empty' # DEBUG
+                # A_s[i] = b'empty', b'empty' # DEBUG
+                A_s[i] = get_random_bytes(32), get_random_bytes(32)
             if A_d[i] == None:
                 # A_d[i] = get_random_bytes(int(math.ceil(math.log(len(A_d),10)))), get_random_bytes(int(math.ceil(math.log(len(A_d),10))))
-                A_d[i] = b'empty', b'empty' # DEBUG
+                # A_d[i] = b'empty', b'empty' # DEBUG
+                A_d[i] = get_random_bytes(128), get_random_bytes(32)
 
         # 6 encrypt each document using AES
         # TODO leave this for now
