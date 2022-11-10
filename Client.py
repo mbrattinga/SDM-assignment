@@ -98,7 +98,7 @@ class Client():
 
     def encrypt(self, documents):
         # files = [{0:["keyord1","keyword2"]},{1: ["keyword1"]},{2:[...]},...]
-        z = 10 #TODO
+        z = 20 #TODO
 
         # calculate total amount of keywords in all provided documents
         total_keywords_amounts = 0

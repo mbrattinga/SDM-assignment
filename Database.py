@@ -252,8 +252,10 @@ class Database():
             # e
             # free location of D_i’s dual (i.e., N_i)
             if len(alfa_1_prime_addr_first_node_Ad) != 32:
-                alfa_1_prime_addr_first_node_Ad = bytearray(16) + alfa_1_prime_addr_first_node_Ad
-            self.A_s[int.from_bytes(alfa4_addr_s_N, 'big')] = gamma_addr_free_node_in_As, alfa_1_prime_addr_first_node_Ad # gamma = addr next free node | alfa_1_prime is its dual
+                # alfa_1_prime_addr_first_node_Ad = bytearray(16) + alfa_1_prime_addr_first_node_Ad
+                self.A_s[int.from_bytes(alfa4_addr_s_N, 'big')] = gamma_addr_free_node_in_As, bytearray(16) + alfa_1_prime_addr_first_node_Ad # gamma = addr next free node | alfa_1_prime is its dual
+            else:
+                self.A_s[int.from_bytes(alfa4_addr_s_N, 'big')] = gamma_addr_free_node_in_As, alfa_1_prime_addr_first_node_Ad # gamma = addr next free node | alfa_1_prime is its dual
 
             # f (boekkeeping logic?)
             # node that precedes D_i’s dual
@@ -267,7 +269,7 @@ class Database():
                     del self.T_s[mu_Fw] # delete entry for that word
                 else:
                     # homomorphically modify address of T_s[Fw] (alfa4, alfa5) A_s, (alfa_1_prime, alfa3) A_sd
-                    self.T_s[mu_Fw] = XOR(self.T_s[mu_Fw], XOR(alfa4_addr_s_N, alfa6_addr_s_N1) + XOR(alfa_1_prime_addr_first_node_Ad, alfa3_addr_d_N1))
+                    self.T_s[mu_Fw] = XOR(self.T_s[mu_Fw], XOR(alfa4_addr_s_N, alfa6_addr_s_N1) + XOR(alfa_1_prime_addr_first_node_Ad[-16:], alfa3_addr_d_N1))
             else:
                 # update pointer of N-1 in A_s | alfa5 = address_s(N-1)
                 beta1_beta2, r_minus1 = self.A_s[int.from_bytes(alfa5_addr_s_N_1, 'big')]
