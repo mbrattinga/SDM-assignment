@@ -4,123 +4,124 @@ from Crypto.Util.Padding import pad, unpad
 from Util import XOR, myprint
 
 class Database():
-
     def __init__(self) -> None:
-
-        # # array(s) stored in the server
-        # # should be an array for each client (?)
-        # self.A_s = [bytes]
         self.A_s = list()
         self.T_s = dict()
         self.initialized = False
 
     def first_setup(self, A_s, T_s):
+        """Sets up the search array and search table, which is required the first time the database is accessed.
+
+        Args:
+            A_s ([(byte, byte)]): search array
+            T_s (_type_): search table
+
+        Raises:
+            Exception: if the database has been set-up before, as this only should be done once.
+        """
         if not self.initialized:
             self.A_s = A_s
             self.T_s = T_s
+            self.initialized = True
         else:
             raise Exception("The database has been set-up before, cannot do that twice!")
 
+
     def add(self, add_token):
-        myprint("Starting adding on database")
+        """Adds a document entry to the database based on the given add token
+
+        Args:
+            add_token ([bytes]): add token that has to be added to the database
+
+        Raises:
+            Exception: if the database has not been set-up using `first_setup()` before, which is required
+
+        Returns:
+            bool: True if the document is sucesfully added
+        """
+
+        if not self.initialized:
+            raise Exception("The database has not been set-up before, please do so first!")
+
         zeros = bytearray(16)
-
+        # 2. for each add token (each keyword)
         for lambda_i in add_token:
+            # parse lambda
             Fw, Gw, A_s_node, ri = lambda_i[:32], lambda_i[32:64], lambda_i[64:96], lambda_i[96:]
-            myprint("Search table free is: ", self.T_s["free"])
-            # phi = int(unpad(self.T_s["free"], SHA256.block_size)) # find last free location
+
+            # 2a. find last free location
             phi = int.from_bytes(self.T_s["free"], 'big')
-            myprint("Phi is", phi)
 
-            # self.T_s["free"] = pad(self.A_s[phi][0], SHA256.block_size) # update search table to previous free entry
-            self.T_s["free"] = self.A_s[phi][0] # update search table to point to previous free entry
-            myprint("New free entry: ", self.T_s["free"])
+            # 2b. update search table to second-to-last free
+            self.T_s["free"] = self.A_s[phi][0]
 
-            # check if there already is a node for this keyword
+            # 2c. recover pointer to first node with this keyword
             if Fw in self.T_s:
                 alpha_1 = XOR(self.T_s[Fw], Gw) # decrypt to obtain address of first node for this word
                 alpha_1 = alpha_1[16:] # we want 16 bytes, so remove leading zeros
             else: # there does not exist a node for this keyword yet
                 alpha_1 = zeros
             
-            # insert new node in the search array (on the spot which we found to be free earlier on)
+            # 2d. store node on the free location in the search array
             self.A_s[phi] = (XOR(A_s_node, (zeros + alpha_1)),ri)
 
-            # update search table
+            # 2e. update search table
             self.T_s[Fw] = XOR(phi.to_bytes(32, 'big'), Gw)
             
             return True
-
-            
-
-
-
         return False
 
     def search(self, search_token):
-        myprint("Starting search on database...")
+        """Returns the documents in the database for the given search token
 
-        # Parse search token
+        Args:
+            search_token ((bytes,bytes,bytes)): search token that represents the search query
+
+        Raises:
+            Exception: if the database has not been set-up using `first_setup()` before, which is required
+
+        Returns:
+            [str]: list of document identifiers that match the given search token
+        """
+
+        if not self.initialized:
+            raise Exception("The database has not been set-up before, please do so first!")
+
+        # 1. parse search token
         (tau_1, tau_2, tau_3) = search_token
         
 
         files = list()
-
-        # Return empty list if tau1 not in search table
+        # 1. return empty list if tau1 not in search table
         if not tau_1 in self.T_s:
-            myprint("Could not find a result for this search...")
             return []
 
-         # step 2
-        # recover pointer to first node of list
+        # 2. recover pointer to first node of list
         alpha_1 = int.from_bytes(XOR(self.T_s[tau_1], tau_2), 'big')
 
-        myprint("Adress in search table points to ", alpha_1)
-
-
-        # step 3
-        # look up N1
+        # 3. lookup the first node and decrypt to obtain the next node in the linked list
+        # 4. continue until you are at the end
         address_lookup = alpha_1
         while True:
+            # get and parse the node
             N_1 = self.A_s[address_lookup]
-            myprint("The node at that address looks like ", N_1)
             (v_1, r_1) = N_1
 
+            # decrypt the node
             H1 = SHA256.new(tau_3 + r_1).digest()
             x = XOR(v_1, H1)
-            myprint("And the decryption of that node looks like ", x)
 
+            # parse the decrypted node
             id, addr_s_N1 = x[:16], x[16:]
-            myprint("Thus the id of this document is", id, "and the next address is ", addr_s_N1)
 
+            # add document identifier to result list
             files.append(id)
-            # if addr_s_N1.decode('utf-8') == "0" * 16:
-            myprint("Checking next address for equality", addr_s_N1, bytes("0" * 16, 'utf-8'), addr_s_N1 == bytes("0" * 16, 'utf-8'), addr_s_N1 == bytearray(16))
+
+            # determine whether there is a next node or not (address is zero bytes)
             if addr_s_N1 == bytes("0" * 16, 'utf-8') or addr_s_N1 == bytearray(16): # bit hacky, either 0000 bytes or string 0000
-                myprint("No more documents for this search query")
                 break
             else:
+                # save the address of the next node for the next iteration
                 address_lookup = int.from_bytes(addr_s_N1, 'big')
-                myprint("The next address to lookup ", addr_s_N1, "is integer ", address_lookup)
-
         return files
-
-
-
-
-
-        # # step 4
-        # # repeat step 3 until address in the tuple is zero
-        # # this gets all nodes for the search keyword
-        # while addrs != 0:
-        #     n_decrypted.append(decr_todo(n[-1], tau_3))
-        #     v1, r1 = n[-1]
-        #     (id, 0, addrs) = xor_todo (v1, hmac_fn(tau_3, r1))
-        #     n.append(addrs)
-        #     id.append(id)
-
-        # # for all ids found, return the encrypted documents/locations
-        # c_filtered = [c[id_item] for id_item in id]
-
-        # return c_filtered
         

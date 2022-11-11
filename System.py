@@ -2,15 +2,26 @@ from Client import Client
 from Database import Database
 from Consultant import Consultant
 
+from Crypto.Hash import MD5
+
+"""
+This class contains a simulation of a scenario with a consultant and two clients.
+Instead of transactions over the netwerk, the consultant and client simply call a function on the database
+"""
 
 database = Database()
-
 consultant = Consultant(database)
 client_a = Client(id=0, consultant=consultant, database=database)
 client_b = Client(id=1, consultant=consultant, database=database)
 
 
 files = [("0", ["cat","dog"]),("1", ["cat"])]
+print("The set of documents:")
+for (id, keywords) in files:
+    print("Document", id, "with hash", MD5.new(bytes(id, 'utf-8')).digest(), "has keywords", keywords)
+
+
+
 (A_s, T_s) = client_a.encrypt(files)
 print()
 print()
