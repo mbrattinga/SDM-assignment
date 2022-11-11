@@ -74,27 +74,12 @@ class Client():
             T_i = S_i + F_S
             C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
             C.append(C_i)
-        self.database.add(C)
+        doc_id_result = self.database.add(C)
 
         # debug
-        print("Client", self.id,  "added", keywords)
+        print("Client", self.id, "added document", doc_id_result, "with keywords", keywords)
         return C
 
-    # Not working yet
-    # def decrypt(self, keywords):
-    #     s_cipher = AES.new(self.key, AES.MODE_CTR)
-    #     hmac_key = HMAC.new(bytes(self.key), digestmod=SHA512)
-
-    #     W = list()
-    #     for i, keyword in enumerate(keywords):
-    #         C_i = keyword
-            
-    #         S_i = s_cipher.encrypt(pad(bytes(i), AES.block_size))
-    #         k_i = hmac_key.update(X_i[:12]).digest()
-    #         T_i = s_hmac.update(i).digest()
-    #         W.append(bytes(a ^ b for a,b in zip(C_i, T_i)))
-
-        return W
 
     def search(self, keyword : str):
         """ Function of the client to search on the database.

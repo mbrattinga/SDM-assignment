@@ -72,10 +72,10 @@ class Consultant():
             T_i = S_i + F_S
             C_i = bytes(a ^ b for a,b in zip(X_i, T_i))
             C.append(C_i)
-        self.database.add(C)
+        doc_id_result = self.database.add(C)
 
         # debug
-        print("Consultant added for client", client.get_id(), keywords)
+        print("Consultant added for client", client.get_id(), "document", doc_id_result, "with keywords", keywords)
         return C
     
 

@@ -14,9 +14,12 @@ class Database():
 
         Args:
             c_keywords ([bytes]): the encryped keywords of the document.
+        Returns:
+            int: the identifier of the document added
         """
         self.storage[self.doc_counter] = c_keywords
         self.doc_counter += 1
+        return self.doc_counter - 1
 
     def search(self, X : bytes, token : bytes) -> [int]:
         """ Performs search of an encrypted keyword.
