@@ -1,3 +1,6 @@
+"""These functions can be considerd to be locally available to the classes.
+For the purpose of sharing code, they are grouped in this util class file
+"""
 
 def XOR(x, y):
     if not len(x) == len(y):
