@@ -150,13 +150,11 @@ class Client():
 
                 # If there already is an entry in the search table, decrypt to get that entry, which is the Addr_s(N+1)
                 if Fw in T_s:
-                    temp = XOR(T_s[Fw], Gw)
+                    first_node = XOR(T_s[Fw], Gw)
                     # addr_s_N1 = addr_s_N1[16:] # Addr size is 16, so we do not need the first 16 leading zeros
-                    addr_s_N1 = temp[:16]
-                    # addr_s_N1 = int.from_bytes(addr_s_N1, 'big')
+                    addr_s_N1 = first_node[:16]
                     # DELETION
-                    addr_d_N1 = temp[-16:]
-                    # addr_d_N1 = int.from_bytes(addr_d_N1, 'big')
+                    addr_d_N1 = first_node[-16:]
                     # END DELETION
                     myprint("Already exists an entry in the search table, namely", T_s[Fw])
                     myprint("Therefore we xor this with Gw", Gw, "to obtain ", addr_s_N1)
@@ -196,13 +194,6 @@ class Client():
 
                 # 3
                 # 3a
-                # doesnt really make sense for delete
-                """ if Ff in T_d:
-                    addr_d_D1 = XOR(T_d[Ff], Gf)
-                    addr_d_D1 = addr_d_D1[16:]
-                else:
-                    addr_d_D1 = zeros # Addr(D+1)=0 string """
-
                 
                 # addr_d_D1 = zeros # defined before the words loop
                 addr_d_N_minus_1 = zeros
@@ -232,13 +223,14 @@ class Client():
                 Di = (XOR(addresses_block + Fw, H2 * 4), ri_prime)
                 A_d[addr_d_D] = Di
 
-                # if addr_d_N1 != zeros: # if there are no words to delete TODO comment doesnt make sense
-                if addr_d_N1 is not zeros: # if there are no words to delete TODO comment doesnt make sense
+                # if addr_d_N1 != zeros: # if the keyword was already encrypted previously
+                if addr_d_N1 is not zeros: # if the keyword was already encrypted previously
                     previous_d, ri_prime = A_d[int.from_bytes(addr_d_N1, 'big')]
                     # previous_d, ri_prime = A_d[addr_d_N1]
 
                     # homomorphically modify addresses
-                    xorstring = zeros + addr_d_D.to_bytes(16,'big') + 2 * zeros + addr_s_N.to_bytes(16,'big') + zeros + 2 * zeros
+                    xorstring = zeros + addr_d_D.to_bytes(16,'big') + 2 * zeros \
+                        + addr_s_N.to_bytes(16,'big') + zeros + 2 * zeros
                     previous_d = XOR(previous_d, xorstring)
                     A_d[int.from_bytes(addr_d_N1, 'big')] = previous_d, ri_prime
                     # A_d[addr_d_N1] = previous_d, ri_prime
