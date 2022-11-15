@@ -36,32 +36,32 @@ class Client():
 
     
 
-    def del_token(self, doc : tuple()) -> tuple([bytes, bytes, bytes, tuple()]):
-        Ff = HMAC.new(self.key1, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
-        Gf = HMAC.new(self.key2, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
-        Pf = HMAC.new(self.key3, msg=bytes(doc[0], 'utf-8'), digestmod=SHA256).digest()
+    def del_token(self, doc : str) -> tuple([bytes, bytes, bytes, str]):
+        Ff = HMAC.new(self.key1, msg=bytes(doc, 'utf-8'), digestmod=SHA256).digest()
+        Gf = HMAC.new(self.key2, msg=bytes(doc, 'utf-8'), digestmod=SHA256).digest()
+        Pf = HMAC.new(self.key3, msg=bytes(doc, 'utf-8'), digestmod=SHA256).digest()
         delete_token = Ff, Gf, Pf, doc
 
         return delete_token
 
 
     # def delete(index, ciphertexts, delete_token):
-    def delete(self, doc):
+    def delete(self, doc : str):
         delete_token = self.del_token(doc)
         self.database.delete(delete_token)
 
 
-    def srch_token(self, w):
+    def srch_token(self, w : str):
         Fw = HMAC.new(self.key1, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         Gw = HMAC.new(self.key2, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         Pw = HMAC.new(self.key3, msg=bytes(w, 'utf-8'), digestmod=SHA256).digest()
         return (Fw, Gw, Pw)
 
-    def search(self, w):
+    def search(self, w : str):
         return self.database.search(self.srch_token(w))
 
 
-    def add_token(self, document):
+    def add_token(self, document : tuple()):
         # document = ("0", ["keyword1", "keyword2"])
 
         Ff = HMAC.new(self.key1, msg=bytes(document[0], 'utf-8'), digestmod=SHA256).digest()
@@ -70,6 +70,8 @@ class Client():
 
         doc_id = MD5.new(bytes(document[0], 'utf-8')).digest() # transform to 16 byte, not for security
         zeros = bytearray(16)
+
+        # the tokens (one for each keyword)
         lambdas = list()
 
         lambdas.append(Ff)
@@ -92,11 +94,11 @@ class Client():
 
         return lambdas
 
-    def add(self, document):
+    def add(self, document : tuple()):
         return self.database.add(self.add_token(document))
 
 
-    def encrypt(self, documents):
+    def encrypt(self, documents : list()):
         # files = [{0:["keyord1","keyword2"]},{1: ["keyword1"]},{2:[...]},...]
         z = 20 #TODO
 
@@ -116,7 +118,7 @@ class Client():
         zeros = bytearray(16)
 
 
-        for doc_id, doc_keywords  in documents:
+        for doc_id, doc_keywords in documents:
             
             # DELETION
             Ff = HMAC.new(self.key1, msg=bytes(doc_id, 'utf-8'), digestmod=SHA256).digest()
@@ -260,17 +262,20 @@ class Client():
 
         # 5 fill remain A_s and A_d with random strings of length that fits in A_s
         for i in range(len(A_s)):
-            if A_s[i] == None:
+            A_s[i] = get_random_bytes(32), get_random_bytes(32) if A_s[i] == None else A_s[i]
+            A_d[i] = get_random_bytes(128), get_random_bytes(32) if A_d[i] == None else A_d[i]
+
+            """ if A_s[i] == None:
                 # A_s[i] = get_random_bytes(int(math.ceil(math.log(len(A_s),10)))), get_random_bytes(int(math.ceil(math.log(len(A_s),10))))
                 # A_s[i] = b'empty', b'empty' # DEBUG
                 A_s[i] = get_random_bytes(32), get_random_bytes(32)
             if A_d[i] == None:
                 # A_d[i] = get_random_bytes(int(math.ceil(math.log(len(A_d),10)))), get_random_bytes(int(math.ceil(math.log(len(A_d),10))))
                 # A_d[i] = b'empty', b'empty' # DEBUG
-                A_d[i] = get_random_bytes(128), get_random_bytes(32)
+                A_d[i] = get_random_bytes(128), get_random_bytes(32) """
 
         # 6 encrypt each document using AES
-        # TODO leave this for now
+        # TODO not used in our version, we solely work with identifiers 
 
         # 7
         # self.database.first_setup(A_s, T_s)

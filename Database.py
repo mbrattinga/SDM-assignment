@@ -22,7 +22,7 @@ class Database():
         self.initialized = False
 
     # def first_setup(self, A_s, T_s):
-    def first_setup(self, A_s, T_s, A_d, T_d):
+    def first_setup(self, A_s : bytes, T_s : bytes, A_d : bytes, T_d : bytes):
         if not self.initialized:
             self.A_s = A_s
             self.T_s = T_s
@@ -81,17 +81,18 @@ class Database():
             # update search table
             # phi_star_random is a bytearray of zeros if the node is the "free" node
             # otherwise random
-
             self.T_s[Fw] = XOR(phi_free_addr.to_bytes(16, 'big') + phi_star_random[-16:], Gw)
 
 
-            # DELETE NOT STABLE
+            # DELETE (not stable)
             # f
+            # update dual of N1
             if alpha_1_star_first_node_Ad != zeros:
                 D1, r = self.A_d[int.from_bytes(alpha_1_star_first_node_Ad, 'big')]
                 self.A_d[int.from_bytes(alpha_1_star_first_node_Ad, 'big')] = XOR(D1, zeros + phi_star_random + 2 * zeros + phi_free_addr.to_bytes(16, 'big') + 2 * zeros), r
 
             # g
+            # update dual of As[phi_free_addr]
             self.A_d[int.from_bytes(phi_star_random, 'big')] = XOR(A_d_node, phi_star_minus_1 + zeros + alpha_1_star_first_node_Ad + phi_free_addr.to_bytes(16, 'big') + zeros + alpha_1_first_node_As + Fw), ri_prime
             phi_star_minus_1 = phi_star_random
 
@@ -110,13 +111,14 @@ class Database():
 
         return False
 
-    def search(self, search_token):
+    def search(self, search_token : tuple()):
         myprint("Starting search on database...")
 
         # Parse search token
         (tau_1_Fw, tau_2_Gw, tau_3_Pw) = search_token
         
 
+        # list of documents to be returned
         files = list()
 
         # Return empty list if tau1 not in search table
@@ -199,17 +201,16 @@ class Database():
 
 
     # def delete(index, ctxt, delete_token):
-    def delete(self, delete_token):
+    def delete(self, delete_token : tuple()):
                 
         # 1
-        token1_Ff, token2_Gf, token3_Pf, doc = delete_token
-        _doc_id, _ = doc
+        token1_Ff, token2_Gf, token3_Pf, doc_id = delete_token
 
         if token1_Ff not in self.T_d:
-            print(f"The document {_doc_id} is not in the database (ask the consultant)")
+            print(f"The document {doc_id} is not in the database (ask the consultant)")
             return
 
-        print(f"Deleting {doc}")
+        print(f"Deleting document {doc_id}")
 
         # 2 
         # find the first node of L_f

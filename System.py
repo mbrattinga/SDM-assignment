@@ -30,18 +30,18 @@ print("client_a searches lion:", [md5_to_files[id] for id in client_a.search("li
 
 ########## DELETING #######################################################################
 
-client_a.delete(("0", None))
+client_a.delete("0")
 print("search cat after deleting document 0", [md5_to_files[id] for id in client_a.search("cat")])
 print("search dog after deleting document 0", [md5_to_files[id] for id in client_a.search("dog")])
 print("search cow after deleting document 0", [md5_to_files[id] for id in client_a.search("cow")])
 # print("search lion after deleting document 0", [md5_to_files[id] for id in client_a.search("lion")])
 
-consultant.delete(("1", None), client_a.get_id())
+consultant.delete("1", client_a.get_id())
 print("search cat after consultant deleting document 1", [md5_to_files[id] for id in client_a.search("cat")])
 print("search dog after consultant deleting document 1", [md5_to_files[id] for id in client_a.search("dog")])
 print("search cow after consultant deleting document 1", [md5_to_files[id] for id in client_a.search("cow")])
 
-client_a.delete(("2", None))
+client_a.delete("2")
 print("search cat after deleting document 2", [md5_to_files[id] for id in client_a.search("cat")])
 print("search dog after deleting document 2", [md5_to_files[id] for id in client_a.search("dog")])
 print("search cow after deleting document 2", [md5_to_files[id] for id in client_a.search("cow")])
